@@ -1,0 +1,17 @@
+{
+  "name": "S-CHECK Pro Attendance",
+  "short_name": "S-CHECK Pro",
+  "description": "Digital Attendance System",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "https://i.ibb.co/XfkmdYjC/LOGO-S-CHECK.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
