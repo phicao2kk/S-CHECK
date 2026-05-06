@@ -574,6 +574,20 @@ input:focus {
     opacity: 0.8;
 }
 
+/* FIX: Bóng đổ chấm xanh bị cắt hình vuông */
+#view-auth .field-container,
+.field-container {
+    overflow: visible !important;
+}
+
+#view-auth .field-container .dot-signal {
+    box-shadow: 0 0 12px #22d3ee;
+}
+
+/* Đảm bảo container glass không cắt bóng */
+#view-auth .glass {
+    overflow: visible !important;
+}
     </style>
 </head>
 <body>
@@ -789,7 +803,7 @@ input:focus {
 
                 <button id="btn-toggle-auth" onclick="toggleAuthMode()" 
                         class="w-full text-[10px] text-slate-400 hover:text-blue-400 uppercase font-bold tracking-[2px] transition-colors py-1">
-                    Chưa có tài khoản? <span class="text-blue-500 underline underline-offset-4">Đăng ký ngay</span>
+                    Chưa có tài khoản? <span class="text-emerald-400 underline decoration-emerald-500/30 underline-offset-4">Đăng ký</span>
                 </button>
             </div>
         </div>
@@ -963,51 +977,56 @@ input:focus {
 </div>
 
 <script>
-// --- HỆ THỐNG BẢO MẬT TỐI CAO: CHỐNG INSPECT & REDIRECT ---
-(function() {
-    function destroyWeb() {
-        // Chuyển hướng ngay lập tức về trang trắng
-        window.location.replace("about:blank");
-    }
+// --- HỆ THỐNG BẢO MẬT TỐI CAO: CHỐNG INSPECT & REDIRECT (có thể tắt bởi master admin) ---
+let antiInspectActive = true; // mặc định bật
 
-    // 1. Chặn và xử lý phím tắt
-    window.addEventListener('keydown', function(e) {
-        // Kiểm tra các phím xâm nhập
-        const isF12 = (e.keyCode === 123);
-        const isDevTools = (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)); // Ctrl+Shift+I/J/C
-        const isViewSource = (e.ctrlKey && e.keyCode === 85); // Ctrl+U
-        const isSavePage = (e.ctrlKey && e.keyCode === 83);   // Ctrl+S
+function enableAntiInspect() {
+    antiInspectActive = true;
+}
 
-        if (isF12 || isDevTools || isViewSource || isSavePage) {
-            e.preventDefault();
-            e.stopPropagation();
-            destroyWeb();
-            return false;
-        }
+function disableAntiInspect() {
+    antiInspectActive = false;
+}
 
-        // GIỮ NGUYÊN: Không chặn Ctrl + (+) hoặc Ctrl + (-) hoặc Ctrl + 0 (Đây là các phím Zoom)
-        // Trình duyệt mặc định xử lý zoom qua keyCode 187, 189, 48 hoặc 107, 109, 96
-    }, true);
-
-    // 2. Chặn chuột phải (để không dùng được menu Inspect)
-    document.addEventListener('contextmenu', function(e) {
+// Hàm xử lý phím tắt
+function handleKeydown(e) {
+    if (!antiInspectActive) return; // nếu dev mode thì bỏ qua
+    const isF12 = (e.keyCode === 123);
+    const isDevTools = (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67));
+    const isViewSource = (e.ctrlKey && e.keyCode === 85);
+    const isSavePage = (e.ctrlKey && e.keyCode === 83);
+    if (isF12 || isDevTools || isViewSource || isSavePage) {
         e.preventDefault();
-    });
+        e.stopPropagation();
+        window.location.replace("about:blank");
+        return false;
+    }
+}
 
-    // 3. Chặn kéo thả ảnh/mã QR (Tránh soi mã)
-    document.addEventListener('dragstart', e => e.preventDefault());
+function handleContextMenu(e) {
+    if (!antiInspectActive) return;
+    e.preventDefault();
+}
 
-    // 4. Phát hiện DevTools mở bằng cách đo kích thước cửa sổ (Tùy chọn)
-    // Nếu người dùng mở bằng menu trình duyệt thay vì phím tắt
-    setInterval(function() {
-        const threshold = 160;
-        if (window.outerWidth - window.innerWidth > threshold || 
-            window.outerHeight - window.innerHeight > threshold) {
-            // Nếu phát hiện cửa sổ bị chiếm dụng bởi Console
-            // destroyWeb(); // Bỏ comment nếu muốn cực đoan hơn
-        }
-    }, 1000);
-})();
+function handleDragStart(e) {
+    if (!antiInspectActive) return;
+    e.preventDefault();
+}
+
+// Gắn listener ban đầu
+window.addEventListener('keydown', handleKeydown, true);
+document.addEventListener('contextmenu', handleContextMenu);
+document.addEventListener('dragstart', handleDragStart);
+
+// Lắng nghe sự kiện từ master switches
+window.addEventListener('devmode-on', () => {
+    disableAntiInspect();
+});
+window.addEventListener('devmode-off', () => {
+    enableAntiInspect();
+});
+
+
 // --- CONFIG FIREBASE ---
 const firebaseConfig = {
     apiKey: "AIzaSyBdg-r3IsGAH_TzN4vR4M5UZGpN43IcK3s",
@@ -1024,7 +1043,12 @@ const rdb = firebase.database();
 const auth = firebase.auth();
 
 let isMuted = false; // Luôn mặc định là false (tức là không tắt tiếng)
-let isFirstLoad = true; // Biến để tránh nổ thông báo cũ khi vừa mở trang
+let isFirstLoad = true; // dòng có sẵn
+// === THÊM CÁC DÒNG NÀY ===
+let isDevMode = false;     // chế độ F12 (bỏ chặn)
+let isMultiScanMode = false; // chế độ cho phép 1 máy quét nhiều lần
+const MASTER_PHONE = "0978877125"; // số điện thoại admin gốc
+// =========================
 let isLoginMode = true;
 let currentSession = null;
 let userSession = null;
@@ -1155,21 +1179,22 @@ async function submitAttendance() {
     // Lấy ID duy nhất của máy này
     const deviceId = getUniqueDeviceId(); 
 
-    // --- BƯỚC 1: KIỂM TRA XEM MÁY NÀY ĐÃ QUÉT TRƯỚC ĐÓ CHƯA ---
-    showToast("Đang kiểm tra dữ liệu thiết bị...", "info");
-    try {
-        const checkRef = rdb.ref('dynamic_attendance/logs/' + userSession.code);
-        // Tìm trong danh sách log xem có deviceId này chưa
-        const snapshot = await checkRef.orderByChild('deviceId').equalTo(deviceId).once('value');
-        
-        if (snapshot.exists()) {
-            // Nếu tìm thấy dữ liệu trùng, báo lỗi và dừng ngay lập tức
-            return showToast("BẠN ĐÃ ĐIỂM DANH SỰ KIỆN NÀY RỒI!", "error");
+    // --- BƯỚC 1: KIỂM TRA XEM MÁY NÀY ĐÃ QUÉT TRƯỚC ĐÓ CHƯA (chỉ khi chưa bật chế độ test) ---
+    // Lấy thông tin admin hiện tại để biết có phải master không (từ userSession.ownerId)
+    const isMasterSession = (userSession && userSession.ownerId) ? 
+        (await firebase.auth().currentUser?.getIdTokenResult()).claims.email?.replace('@scheck.pro', '') === MASTER_PHONE : false;
+    if (!isMultiScanMode || !isMasterSession) {
+        showToast("Đang kiểm tra dữ liệu thiết bị...", "info");
+            try {
+                const checkRef = rdb.ref('dynamic_attendance/logs/' + userSession.code);
+                const snapshot = await checkRef.orderByChild('deviceId').equalTo(deviceId).once('value');
+                if (snapshot.exists()) {
+                    return showToast("BẠN ĐÃ ĐIỂM DANH SỰ KIỆN NÀY RỒI!", "error");
+                }
+            } catch (e) { console.error(e); }
+        } else {
+            console.log("Chế độ test: bỏ qua kiểm tra trùng lặp");
         }
-    } catch (e) {
-        console.error("Lỗi kiểm tra trùng lặp:", e);
-        // Nếu lỗi phân quyền index, hệ thống sẽ bỏ qua bước này để không chặn người dùng
-    }
 
     // --- BƯỚC 2: KIỂM TRA GPS (CHỈ KHI ADMIN BẬT) ---
     if (userSession && userSession.requireLocation === true) {
@@ -1246,6 +1271,16 @@ function checkAuthState() {
             
             showView('admin');
             
+            // Kiểm tra nếu là tài khoản master (0978877125@scheck.pro)
+            const isMaster = (user.email && user.email.replace('@scheck.pro', '') === MASTER_PHONE);
+            if (isMaster) {
+                renderMasterSwitches();
+            } else {
+                // Ẩn khu vực switch nếu có (đề phòng)
+                const container = document.getElementById('master-switches-container');
+                if (container) container.style.display = 'none';
+            }
+
             const displayName = user.email.replace('@scheck.pro', '');
             if (nav) {
                 nav.innerHTML = `
@@ -1253,6 +1288,10 @@ function checkAuthState() {
                             class="text-[10px] font-black text-red-500 uppercase bg-red-500/5 border border-red-500/20 px-4 py-2 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-lg active:scale-90">
                         <i class="fa-solid fa-power-off mr-1.5"></i> THOÁT (${displayName})
                     </button>`;
+            }
+
+            if (user.email && user.email.replace('@scheck.pro', '') === MASTER_PHONE) {
+                window.MASTER_UID = user.uid;
             }
 
             // Reset và tạo các trường mặc định
@@ -1436,23 +1475,91 @@ function listenLogs(code) {
     });
 }
 
+// Hàm dịch lỗi Firebase sang tiếng Việt
+function translateFirebaseError(errorMessage) {
+    if (errorMessage.includes('INVALID_LOGIN_CREDENTIALS') || errorMessage.includes('auth/invalid-login-credentials')) {
+        return '❌ Sai tài khoản hoặc mật khẩu. Vui lòng thử lại. Nếu chưa có tài khoản, hãy bấm "Đăng ký ngay".';
+    }
+    if (errorMessage.includes('auth/user-not-found')) {
+        return '❌ Tài khoản không tồn tại. Hãy bấm "Đăng ký ngay" để tạo mới.';
+    }
+    if (errorMessage.includes('auth/wrong-password')) {
+        return '❌ Mật khẩu không chính xác.';
+    }
+    if (errorMessage.includes('auth/email-already-in-use')) {
+        return '⚠️ Email đã được sử dụng. Vui lòng đăng nhập.';
+    }
+    if (errorMessage.includes('auth/weak-password')) {
+        return '⚠️ Mật khẩu quá yếu (tối thiểu 6 ký tự).';
+    }
+    if (errorMessage.includes('auth/network-request-failed')) {
+        return '🌐 Lỗi kết nối mạng. Kiểm tra internet.';
+    }
+    return '⚠️ Lỗi: ' + errorMessage.replace('Firebase: ', '').replace(/\(.*\)/, '').trim();
+}
+
 async function handleAuth() {
     const input = document.getElementById('auth-identifier').value.trim();
     const pass = document.getElementById('auth-password').value.trim();
     const confirmPass = document.getElementById('auth-confirm-password').value.trim();
-    if (!input || !pass) return showToast("Nhập đủ thông tin!", "info");
-    if(!isLoginMode && pass !== confirmPass) return showToast("Mật khẩu không khớp!", "error");
+    const btn = document.querySelector('button[onclick="handleAuth()"]');
+    
+    if (!input || !pass) {
+        showToast("📝 Nhập đủ thông tin!", "info");
+        return;
+    }
+    if (!isLoginMode && pass !== confirmPass) {
+        showToast("🔐 Mật khẩu xác nhận không khớp!", "error");
+        return;
+    }
+    
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> ĐANG XỬ LÝ...';
+    btn.disabled = true;
+
     let email = input.includes('@') ? input : input + "@scheck.pro";
+    
     try {
-        if (isLoginMode) { await auth.signInWithEmailAndPassword(email, pass); }
-        else { await auth.createUserWithEmailAndPassword(email, pass); showToast("Đăng ký thành công!", "success"); }
-    } catch (e) { showToast(e.message, "error"); }
+        if (isLoginMode) { 
+            await auth.signInWithEmailAndPassword(email, pass); 
+            // Nếu đăng nhập thành công, không cần làm gì thêm
+        } else { 
+            await auth.createUserWithEmailAndPassword(email, pass); 
+            showToast("✅ Đăng ký thành công!", "success"); 
+            isLoginMode = true;
+            // Đợi một chút để DOM cập nhật rồi mới gọi toggleAuthMode
+            setTimeout(() => {
+                toggleAuthMode();
+            }, 100);
+        }
+    } catch (e) { 
+        console.log("Lỗi từ Firebase:", e.code, e.message);
+        let friendlyMsg = "⚠️ Lỗi hệ thống. Vui lòng thử lại.";
+        if (e.code === 'auth/invalid-login-credentials' || e.message.includes('INVALID_LOGIN_CREDENTIALS')) {
+            friendlyMsg = "❌ Sai tài khoản hoặc mật khẩu. Nếu chưa có tài khoản, hãy bấm 'Đăng ký ngay'.";
+        } else if (e.code === 'auth/user-not-found') {
+            friendlyMsg = "❌ Tài khoản không tồn tại. Hãy bấm 'Đăng ký ngay' để tạo mới.";
+        } else if (e.code === 'auth/wrong-password') {
+            friendlyMsg = "❌ Mật khẩu không chính xác.";
+        } else if (e.code === 'auth/email-already-in-use') {
+            friendlyMsg = "⚠️ Email đã được sử dụng. Vui lòng đăng nhập.";
+        } else if (e.code === 'auth/weak-password') {
+            friendlyMsg = "⚠️ Mật khẩu quá yếu (tối thiểu 6 ký tự).";
+        } else if (e.code === 'auth/network-request-failed') {
+            friendlyMsg = "🌐 Lỗi kết nối mạng. Kiểm tra internet.";
+        } else {
+            friendlyMsg = `⚠️ Lỗi: ${e.message}`;
+        }
+        showToast(friendlyMsg, "error");
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
 }
 
 function toggleAuthMode() {
     isLoginMode = !isLoginMode;
     
-    // Reset inputs
     document.getElementById('auth-identifier').value = "";
     document.getElementById('auth-password').value = "";
     document.getElementById('auth-confirm-password').value = "";
@@ -1462,22 +1569,20 @@ function toggleAuthMode() {
     const btnText = document.getElementById('btn-auth-text');
     const toggleBtn = document.getElementById('btn-toggle-auth');
 
+    if (!authSubtitle || !confirmField || !btnText || !toggleBtn) return; // thêm dòng này
+
     if (!isLoginMode) {
-        // Chế độ Đăng ký
         authSubtitle.innerText = "ĐĂNG KÝ TÀI KHOẢN";
         authSubtitle.parentElement.classList.replace('bg-indigo-600', 'bg-emerald-600'); 
-        
-        confirmField.classList.add('show'); // Kích hoạt hiệu ứng dãn
+        confirmField.classList.add('show');
         btnText.innerText = "Đăng ký ngay";
-        toggleBtn.innerHTML = "Đã có tài khoản? <span class='text-blue-500'>Đăng nhập</span>";
+        toggleBtn.innerHTML = "Đã có tài khoản? <span class='text-indigo-400 underline decoration-indigo-500/30 underline-offset-4'>Đăng nhập</span>";
     } else {
-        // Chế độ Đăng nhập
         authSubtitle.innerText = "ĐĂNG NHẬP HỆ THỐNG";
         authSubtitle.parentElement.classList.replace('bg-emerald-600', 'bg-indigo-600'); 
-        
-        confirmField.classList.remove('show'); // Kích hoạt hiệu ứng thu lại
+        confirmField.classList.remove('show');
         btnText.innerText = "Đăng nhập ngay";
-        toggleBtn.innerHTML = "Chưa có tài khoản? <span class='text-blue-500'>Đăng ký</span>";
+        toggleBtn.innerHTML = "Chưa có tài khoản? <span class='text-emerald-400 underline decoration-emerald-500/30 underline-offset-4'>Đăng ký</span>";
     }
 }
 
@@ -1844,37 +1949,6 @@ function hideInitialLoader() {
         loader.style.opacity = '0';
         loader.style.transition = 'opacity 0.5s ease';
         setTimeout(() => loader.remove(), 500);
-    }
-}
-
-async function handleAuth() {
-    const input = document.getElementById('auth-identifier').value.trim();
-    const pass = document.getElementById('auth-password').value.trim();
-    const confirmPass = document.getElementById('auth-confirm-password').value.trim();
-    const btn = document.querySelector('button[onclick="handleAuth()"]');
-    
-    if (!input || !pass) return showToast("Nhập đủ thông tin!", "info");
-    if(!isLoginMode && pass !== confirmPass) return showToast("Mật khẩu không khớp!", "error");
-    
-    // Hiệu ứng Loading
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> ĐANG XỬ LÝ...';
-    btn.disabled = true;
-
-    let email = input.includes('@') ? input : input + "@scheck.pro";
-    
-    try {
-        if (isLoginMode) { 
-            await auth.signInWithEmailAndPassword(email, pass); 
-        } else { 
-            await auth.createUserWithEmailAndPassword(email, pass); 
-            showToast("Đăng ký thành công!", "success"); 
-        }
-    } catch (e) { 
-        showToast(e.message, "error"); 
-    } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
     }
 }
 
@@ -2289,7 +2363,6 @@ async function exportSpecificSession(code) {
 // Trạng thái mặc định: isMuted = false (nghĩa là đang bật âm và thông báo)
 function toggleMute() {
     const toggle = document.getElementById('notify-toggle');
-    const statusLabel = document.getElementById('status-label');
     const statusText = document.getElementById('status-text');
     const indicator = document.getElementById('live-indicator');
     
@@ -2297,12 +2370,10 @@ function toggleMute() {
     isMuted = !toggle.checked;
 
     if (isMuted) {
-        if (statusLabel) statusLabel.innerText = "Trạng thái: OFF";
         if (statusText) statusText.style.color = "#64748b"; // Màu xám
         if (indicator) indicator.classList.add('hidden');
         showToast("Đã tắt âm thanh thông báo", "info");
     } else {
-        if (statusLabel) statusLabel.innerText = "Trạng thái: ON";
         if (statusText) statusText.style.color = "#10b981"; // Màu xanh
         if (indicator) indicator.classList.remove('hidden');
         showToast("Đã bật âm thanh thông báo", "success");
@@ -2622,6 +2693,71 @@ function closeAnchorModal() {
     }
 
     showToast("Đã hủy thiết lập vị trí", "info");
+}
+
+function renderMasterSwitches() {
+    // Tìm vị trí để chèn: trong cột trái (col-span-4), sau phần GPS hoặc trước nút kích hoạt
+    const targetContainer = document.querySelector('#view-admin .lg\\:col-span-4 .glass .space-y-6');
+    if (!targetContainer) return;
+    
+    // Kiểm tra xem đã có container chưa, nếu chưa thì tạo
+    let switchesDiv = document.getElementById('master-switches-container');
+    if (!switchesDiv) {
+        switchesDiv = document.createElement('div');
+        switchesDiv.id = 'master-switches-container';
+        switchesDiv.className = 'pt-4 border-t border-white/10 mt-2 space-y-4';
+        
+        // Chèn vào trước nút kích hoạt hoặc sau phần GPS
+        const activateBtn = document.getElementById('btn-session-action');
+        if (activateBtn && activateBtn.parentNode) {
+            activateBtn.parentNode.insertBefore(switchesDiv, activateBtn);
+        } else {
+            targetContainer.appendChild(switchesDiv);
+        }
+    }
+    
+    // Cập nhật nội dung
+    switchesDiv.innerHTML = `
+        <div class="flex items-center justify-between">
+            <span class="text-[9px] font-black text-amber-400 uppercase tracking-widest">🔓 CHẾ ĐỘ F12 (DEV MODE)</span>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-dev-mode" class="sr-only peer" ${isDevMode ? 'checked' : ''}>
+                <div class="w-10 h-5 bg-slate-800 rounded-full peer peer-checked:bg-amber-600 transition-all after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+            </label>
+        </div>
+        <div class="flex items-center justify-between">
+            <span class="text-[9px] font-black text-emerald-400 uppercase tracking-widest">🔄 1 MÁY NHIỀU LƯỢT (TEST MODE)</span>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle-multiscan-mode" class="sr-only peer" ${isMultiScanMode ? 'checked' : ''}>
+                <div class="w-10 h-5 bg-slate-800 rounded-full peer peer-checked:bg-emerald-600 transition-all after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+            </label>
+        </div>
+        <div class="text-[8px] text-slate-500 italic">* Chỉ hiển thị cho tài khoản quản trị gốc</div>
+    `;
+    
+    // Gắn sự kiện
+    const devToggle = document.getElementById('toggle-dev-mode');
+    const multiToggle = document.getElementById('toggle-multiscan-mode');
+    if (devToggle) {
+        devToggle.addEventListener('change', (e) => {
+            isDevMode = e.target.checked;
+            if (isDevMode) {
+                showToast("Chế độ F12: ĐÃ MỞ KHÓA (có thể dùng inspect)", "info");
+                // Gỡ bỏ các listener chặn
+                window.dispatchEvent(new Event('devmode-on')); // có thể kích hoạt để gỡ bỏ
+            } else {
+                showToast("Chế độ F12: ĐÃ KHÓA (chặn inspect)", "info");
+                // Khôi phục chặn
+                window.dispatchEvent(new Event('devmode-off'));
+            }
+        });
+    }
+    if (multiToggle) {
+        multiToggle.addEventListener('change', (e) => {
+            isMultiScanMode = e.target.checked;
+            showToast(`Chế độ test (1 máy nhiều lượt): ${isMultiScanMode ? "BẬT" : "TẮT"}`, isMultiScanMode ? "success" : "info");
+        });
+    }
 }
 
 // Hàm phụ trợ để hiển thị mã QR điểm danh (Bạn gom logic hiện QR vào đây cho gọn)
