@@ -1181,8 +1181,17 @@ async function submitAttendance() {
 
     // --- BƯỚC 1: KIỂM TRA XEM MÁY NÀY ĐÃ QUÉT TRƯỚC ĐÓ CHƯA (chỉ khi chưa bật chế độ test) ---
     // Lấy thông tin admin hiện tại để biết có phải master không (từ userSession.ownerId)
-    const isMasterSession = (userSession && userSession.ownerId) ? 
-        (await firebase.auth().currentUser?.getIdTokenResult()).claims.email?.replace('@scheck.pro', '') === MASTER_PHONE : false;
+    let isMasterSession = false;
+    if (userSession && userSession.ownerId && firebase.auth().currentUser) {
+        try {
+            const tokenResult = await firebase.auth().currentUser.getIdTokenResult();
+            if (tokenResult.claims && tokenResult.claims.email) {
+                isMasterSession = tokenResult.claims.email.replace('@scheck.pro', '') === MASTER_PHONE;
+            }
+        } catch(e) {
+            console.error("Lỗi lấy token Master:", e);
+        }
+    }
     if (!isMultiScanMode || !isMasterSession) {
         showToast("Đang kiểm tra dữ liệu thiết bị...", "info");
             try {
