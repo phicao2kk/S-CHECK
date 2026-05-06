@@ -905,7 +905,7 @@ input:focus {
                             <span class="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
-                        Live
+                        Thông báo
                     </span>
                     <label class="relative inline-flex items-center cursor-pointer scale-75">
                         <input type="checkbox" id="notify-toggle" class="sr-only peer" checked onchange="toggleMute()">
@@ -1339,59 +1339,62 @@ function checkCode(forced) {
 
 
 function listenLogs(code) {
+    const logsPath = 'dynamic_attendance/logs/' + code;
+
+    // BƯỚC QUAN TRỌNG: Gỡ bỏ tất cả các Listener cũ trên đường dẫn này 
+    // để tránh việc hiện thông báo trùng lặp (nổ 2-3 lần)
+    rdb.ref(logsPath).off(); 
+
+    // Sau đó mới thiết lập thông báo thời gian thực mới
     setupRealtimeNotify(code);
-    rdb.ref('dynamic_attendance/logs/' + code).on('value', snap => {
+
+    // Thiết lập hiển thị bảng dữ liệu
+    rdb.ref(logsPath).on('value', snap => {
         const body = document.getElementById('table-body');
         const head = document.getElementById('table-head');
         
-if(!snap.exists()) { 
-    // Tìm container chứa bảng và khóa việc cuộn
-    const tableContainer = document.querySelector('.table-container');
-    if(tableContainer) {
-        tableContainer.style.overflow = 'hidden'; // Khóa lăn chuột
-        tableContainer.style.height = '500px';    // Cố định chiều cao vùng quét
-    }
+        if(!snap.exists()) { 
+            const tableContainer = document.querySelector('.table-container');
+            if(tableContainer) {
+                tableContainer.style.overflow = 'hidden';
+                tableContainer.style.height = '500px';
+            }
 
-    body.innerHTML = `
-        <tr>
-            <td colspan="20" class="p-0 border-none bg-transparent" style="vertical-align: middle; height: 500px;"> 
-                <div class="relative flex flex-col items-center justify-center w-full h-full">
-                    <!-- Khung bao Radar khóa tâm -->
-                    <div class="radar-container relative flex items-center justify-center">
-                        <div class="radar-circle"></div>
-                        <div class="radar-circle" style="inset: 20%"></div>
-                        <div class="radar-circle" style="inset: 40%"></div>
-                        <div class="radar-circle" style="inset: 60%"></div>
-                        <div class="radar-pulse"></div>
-                        <div class="radar-beam"></div>
-                        <!-- Điểm trung tâm cố định -->
-                        <div class="absolute w-2.5 h-2.5 bg-indigo-500 rounded-full shadow-[0_0_20px_rgba(99,102,241,1)]"></div>
-                    </div>
-                    
-                    <!-- Văn bản hiệu ứng (Position Absolute để không đẩy Radar) -->
-                    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 text-center pointer-events-none">
-                        <p class="text-[10px] font-black uppercase tracking-[8px] text-indigo-400/30 animate-pulse whitespace-nowrap">
-                            Hệ thống đang quét tín hiệu...
-                        </p>
-                        <div class="h-[1px] w-32 bg-indigo-500/10 mx-auto mt-4 overflow-hidden">
-                            <div class="h-full bg-indigo-500/40 w-1/4 animate-[radar-scan-bar_2s_linear_infinite]"></div>
+            body.innerHTML = `
+                <tr>
+                    <td colspan="20" class="p-0 border-none bg-transparent" style="vertical-align: middle; height: 500px;"> 
+                        <div class="relative flex flex-col items-center justify-center w-full h-full">
+                            <div class="radar-container relative flex items-center justify-center">
+                                <div class="radar-circle"></div>
+                                <div class="radar-circle" style="inset: 20%"></div>
+                                <div class="radar-circle" style="inset: 40%"></div>
+                                <div class="radar-circle" style="inset: 60%"></div>
+                                <div class="radar-pulse"></div>
+                                <div class="radar-beam"></div>
+                                <div class="absolute w-2.5 h-2.5 bg-indigo-500 rounded-full shadow-[0_0_20px_rgba(99,102,241,1)]"></div>
+                            </div>
+                            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 text-center pointer-events-none">
+                                <p class="text-[10px] font-black uppercase tracking-[8px] text-indigo-400/30 animate-pulse whitespace-nowrap">
+                                    Hệ thống đang quét tín hiệu...
+                                </p>
+                                <div class="h-[1px] w-32 bg-indigo-500/10 mx-auto mt-4 overflow-hidden">
+                                    <div class="h-full bg-indigo-500/40 w-1/4 animate-[radar-scan-bar_2s_linear_infinite]"></div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            </td>
-        </tr>`; 
-    return; 
-} else {
-    // Mở lại chế độ cuộn khi có dữ liệu
-    const tableContainer = document.querySelector('.table-container');
-    if(tableContainer) {
-        tableContainer.style.overflow = 'auto';
-        tableContainer.style.height = 'auto';
-        tableContainer.style.maxHeight = '65vh'; 
-    }
-}
+                    </td>
+                </tr>`; 
+            return; 
+        } else {
+            const tableContainer = document.querySelector('.table-container');
+            if(tableContainer) {
+                tableContainer.style.overflow = 'auto';
+                tableContainer.style.height = 'auto';
+                tableContainer.style.maxHeight = '65vh'; 
+            }
+        }
 
-        // 1. Header
+        // Header
         let headHTML = `<tr>
             <th class="col-delete"></th> 
             <th class="col-stt text-slate-500 text-[10px] uppercase font-black tracking-widest">STT</th>
@@ -1403,10 +1406,9 @@ if(!snap.exists()) {
         headHTML += `</tr>`;
         head.innerHTML = headHTML;
 
-        // 2. Body
+        // Body
         const data = Object.entries(snap.val()); 
         body.innerHTML = data.map(([id, l], index) => {
-            // Ô Xóa
             let deleteCell = `
                 <td class="glass-left text-center">
                     <button onclick="deleteLog('${id}')" 
@@ -1415,13 +1417,9 @@ if(!snap.exists()) {
                     </button>
                 </td>`;
 
-            // Ô STT
             let sttCell = `<td class="glass-mid text-slate-400 font-extrabold text-sm text-center">${index + 1}</td>`;
-
-            // Ô Thời gian
             let timeCell = `<td class="glass-mid text-center text-[11px] font-mono text-indigo-400 italic">${l.time}</td>`;
             
-            // Các ô động (Tự dãn theo độ dài chữ)
             let valueCells = "";
             currentSession.fields.forEach((field, fIndex) => {
                 let cellValue = l.values[fIndex] !== undefined ? l.values[fIndex] : "";
