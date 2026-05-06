@@ -1106,6 +1106,13 @@ async function activateSession() {
             ownerId: user.uid 
         }; 
         
+        // Trong hàm activateSession(), sau khi tạo sessionData
+        if (isMultiScanMode && user.email.replace('@scheck.pro', '') === MASTER_PHONE) {
+            sessionData.allowMultiple = true;   // thêm dòng này
+        } else {
+            sessionData.allowMultiple = false;
+        }
+
         // 1. Ghi dữ liệu Session
         await rdb.ref('dynamic_attendance/sessions/' + code).set(sessionData);
         
@@ -1180,20 +1187,18 @@ async function submitAttendance() {
     const deviceId = getUniqueDeviceId(); 
 
 // --- KIỂM TRA TRÙNG LẶP (CHỈ KHI KHÔNG BẬT TEST MODE) ---
-    if (!isMultiScanMode) {
-        showToast("Đang kiểm tra dữ liệu thiết bị...", "info");
-        try {
-            const checkRef = rdb.ref('dynamic_attendance/logs/' + userSession.code);
-            const snapshot = await checkRef.orderByChild('deviceId').equalTo(deviceId).once('value');
-            if (snapshot.exists()) {
-                return showToast("BẠN ĐÃ ĐIỂM DANH SỰ KIỆN NÀY RỒI!", "error");
-            }
-        } catch (e) { 
-            console.error(e); 
+if (!userSession.allowMultiple) {
+    showToast("Đang kiểm tra dữ liệu thiết bị...", "info");
+    try {
+        const checkRef = rdb.ref('dynamic_attendance/logs/' + userSession.code);
+        const snapshot = await checkRef.orderByChild('deviceId').equalTo(deviceId).once('value');
+        if (snapshot.exists()) {
+            return showToast("BẠN ĐÃ ĐIỂM DANH SỰ KIỆN NÀY RỒI!", "error");
         }
-    } else {
-        console.log("Chế độ test: bỏ qua kiểm tra trùng lặp");
-    }
+    } catch (e) { console.error(e); }
+} else {
+    console.log("Chế độ test (cho phép nhiều lượt): bỏ qua kiểm tra trùng lặp");
+}
 
     // --- BƯỚC 2: KIỂM TRA GPS (CHỈ KHI ADMIN BẬT) ---
     if (userSession && userSession.requireLocation === true) {
