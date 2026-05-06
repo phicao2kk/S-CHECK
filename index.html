@@ -1179,31 +1179,21 @@ async function submitAttendance() {
     // Lấy ID duy nhất của máy này
     const deviceId = getUniqueDeviceId(); 
 
-    // --- BƯỚC 1: KIỂM TRA XEM MÁY NÀY ĐÃ QUÉT TRƯỚC ĐÓ CHƯA (chỉ khi chưa bật chế độ test) ---
-    // Lấy thông tin admin hiện tại để biết có phải master không (từ userSession.ownerId)
-    let isMasterSession = false;
-    if (userSession && userSession.ownerId && firebase.auth().currentUser) {
-        try {
-            const tokenResult = await firebase.auth().currentUser.getIdTokenResult();
-            if (tokenResult.claims && tokenResult.claims.email) {
-                isMasterSession = tokenResult.claims.email.replace('@scheck.pro', '') === MASTER_PHONE;
-            }
-        } catch(e) {
-            console.error("Lỗi lấy token Master:", e);
-        }
-    }
-    if (!isMultiScanMode || !isMasterSession) {
+// --- KIỂM TRA TRÙNG LẶP (CHỈ KHI KHÔNG BẬT TEST MODE) ---
+    if (!isMultiScanMode) {
         showToast("Đang kiểm tra dữ liệu thiết bị...", "info");
-            try {
-                const checkRef = rdb.ref('dynamic_attendance/logs/' + userSession.code);
-                const snapshot = await checkRef.orderByChild('deviceId').equalTo(deviceId).once('value');
-                if (snapshot.exists()) {
-                    return showToast("BẠN ĐÃ ĐIỂM DANH SỰ KIỆN NÀY RỒI!", "error");
-                }
-            } catch (e) { console.error(e); }
-        } else {
-            console.log("Chế độ test: bỏ qua kiểm tra trùng lặp");
+        try {
+            const checkRef = rdb.ref('dynamic_attendance/logs/' + userSession.code);
+            const snapshot = await checkRef.orderByChild('deviceId').equalTo(deviceId).once('value');
+            if (snapshot.exists()) {
+                return showToast("BẠN ĐÃ ĐIỂM DANH SỰ KIỆN NÀY RỒI!", "error");
+            }
+        } catch (e) { 
+            console.error(e); 
         }
+    } else {
+        console.log("Chế độ test: bỏ qua kiểm tra trùng lặp");
+    }
 
     // --- BƯỚC 2: KIỂM TRA GPS (CHỈ KHI ADMIN BẬT) ---
     if (userSession && userSession.requireLocation === true) {
