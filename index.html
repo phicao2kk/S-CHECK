@@ -2223,7 +2223,7 @@ function resetEventForm() {
 async function exportToExcel() {
     // 1. Kiểm tra quyền truy cập dữ liệu
     if (!currentSession || !currentSession.code) {
-        return showToast("Vui lòng kích hoạt hoặc chọn một sự kiện trong lịch sử!", "error");
+        return showToast("Vui lòng kích hoạt hoặc chọn một sự kiện từ Lịch sử!", "error");
     }
 
     showToast("Đang tạo file báo cáo chuyên nghiệp...", "info");
@@ -3180,7 +3180,7 @@ async function deleteSession(code) {
 // 1. Hàm mở Modal
 function openUploadModal() {
     if (!currentSession || !currentSession.code) {
-        return showToast("Vui lòng kích hoạt hoặc chọn 1 sự kiện!", "error");
+        return showToast("Vui lòng kích hoạt hoặc chọn 1 sự kiện từ Lịch sử!", "error");
     }
     const modal = document.getElementById('upload-modal');
     modal.classList.remove('hidden');
