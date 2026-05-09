@@ -927,9 +927,19 @@ input:focus {
                     </label>
                 </div>
 
+                <!-- Nút Xuất Excel thông thường -->
                 <button onclick="exportToExcel()" class="flex items-center gap-2 px-4 py-3 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-2xl text-[10px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-all">
                     <i class="fa-solid fa-file-excel"></i> Xuất Excel
                 </button>
+
+                <!-- Nút Đối soát vắng (Kích hoạt input file ẩn) -->
+                <button onclick="openUploadModal()" class="flex items-center gap-2 px-4 py-3 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-2xl text-[10px] font-black uppercase hover:bg-amber-500 hover:text-white transition-all">
+                    <i class="fa-solid fa-user-slash"></i> Đối soát vắng
+                </button>
+
+                <!-- Input file ẩn để chọn tệp -->
+                <input type="file" id="master-file-input" accept=".xlsx, .xls" class="hidden" onchange="handleFileSelected(this)">
+
                 <button onclick="clearLogs()" class="px-4 py-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-2xl text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">🗑 Xóa</button>
             </div>
         </div>
@@ -2026,38 +2036,52 @@ async function showHistory() {
 
 function renderHistoryItems(items) {
     const listContainer = document.getElementById('history-list');
-    listContainer.innerHTML = items.map(item => `
-        <div class="history-item glass p-4 lg:p-5 rounded-2xl border border-white/5 hover:border-indigo-500/30 transition-all group">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                
-                <!-- THÔNG TIN SỰ KIỆN: Thêm giới hạn dòng để không vỡ giao diện -->
-                <div class="space-y-1 flex-1 min-w-0 w-full">
-                    <h4 class="font-black text-sm lg:text-base text-white uppercase group-hover:text-indigo-400 transition-colors tracking-tight truncate-2-lines">
+    listContainer.innerHTML = items.map(item => {
+        // Chuyển mảng fields thành chuỗi base64 để truyền an toàn qua HTML attribute
+        const fieldsBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(item.fields))));
+        
+        return `
+        <div class="history-item glass p-4 lg:p-5 rounded-2xl border border-white/5 hover:border-indigo-500/20 transition-all group mb-2">
+            <div class="flex flex-col gap-4">
+                <div class="space-y-1">
+                    <h4 class="font-black text-[13px] lg:text-sm text-white uppercase group-hover:text-indigo-400 transition-colors tracking-tight truncate">
                         ${item.title}
                     </h4>
                     <div class="flex items-center gap-2 text-slate-500">
-                        <i class="fa-regular fa-calendar-check text-[10px]"></i>
-                        <p class="text-[10px] font-bold">${new Date(item.ts).toLocaleString('vi-VN')}</p>
+                        <i class="fa-regular fa-clock text-[9px]"></i>
+                        <p class="text-[9px] font-bold uppercase">${new Date(item.ts).toLocaleString('vi-VN')}</p>
                     </div>
                 </div>
 
-                <!-- CÁC NÚT THAO TÁC: ÉP NẰM NGANG TRÊN PC -->
-                <div class="flex flex-row gap-2 w-full md:w-auto shrink-0">
+                <div class="grid grid-cols-4 gap-1.5 lg:gap-2">
                     <button onclick="exportSpecificSession('${item.code}')" 
-                            class="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2.5 bg-emerald-500/10 text-emerald-500 rounded-xl hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20">
+                            class="flex flex-col items-center justify-center gap-1 py-2.5 bg-emerald-500/10 text-emerald-500 rounded-xl border border-emerald-500/20 active:scale-95 transition-all">
                         <i class="fa-solid fa-file-excel text-xs"></i>
-                        <span class="text-[10px] font-black uppercase whitespace-nowrap">Xuất Excel</span>
+                        <span class="text-[8px] font-black uppercase">Excel</span>
                     </button>
 
                     <button onclick="restoreSession('${item.code}')" 
-                            class="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2.5 bg-indigo-500/10 text-indigo-500 rounded-xl hover:bg-indigo-500 hover:text-white transition-all border border-indigo-500/20">
+                            class="flex flex-col items-center justify-center gap-1 py-2.5 bg-indigo-500/10 text-indigo-500 rounded-xl border border-indigo-500/20 active:scale-95 transition-all">
                         <i class="fa-solid fa-chart-column text-xs"></i>
-                        <span class="text-[10px] font-black uppercase whitespace-nowrap">Báo cáo</span>
+                        <span class="text-[8px] font-black uppercase">Xem</span>
+                    </button>
+
+                    <!-- Nút Soát Vắng gọi hàm trung gian -->
+                    <button onclick="prepareAbsentCheck('${item.code}', '${item.title.replace(/'/g, "\\'")}', '${fieldsBase64}')" 
+                            class="flex flex-col items-center justify-center gap-1 py-2.5 bg-amber-500/10 text-amber-500 rounded-xl border border-amber-500/20 active:scale-95 transition-all">
+                        <i class="fa-solid fa-user-check text-xs"></i>
+                        <span class="text-[8px] font-black uppercase">Soát Vắng</span>
+                    </button>
+
+                    <button onclick="deleteSession('${item.code}')" 
+                            class="flex flex-col items-center justify-center gap-1 py-2.5 bg-red-500/10 text-red-500 rounded-xl border border-red-500/20 active:scale-95 transition-all">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                        <span class="text-[8px] font-black uppercase">Xóa</span>
                     </button>
                 </div>
             </div>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
 }
 
 // Hàm lọc tìm kiếm trong lịch sử
@@ -2859,6 +2883,376 @@ function getUniqueDeviceId() {
     return deviceId;
 }
 
+// --- BIẾN TOÀN CỤC CHO ĐỐI SOÁT ---
+let masterData = []; 
+let absentList = [];
+let detectedHeaderName = "";
+const HEADER_KEYWORDS = ['họ tên', 'họ và tên', 'tên', 'fullname', 'full name', 'name', 'mssv', 'mã số', 'mã sv', 'id', 'stt'];
+
+// 1. Xử lý khi chọn File Excel
+async function handleFileSelected(input) {
+    if (!input.files || !input.files[0]) return;
+    
+    // THÊM DÒNG NÀY: Đóng ngay modal chọn tệp để hiện modal kết quả
+    closeUploadModal();
+
+    // Kiểm tra xem Admin đã chọn Sự kiện nào chưa
+    if (!currentSession || !currentSession.code) {
+        input.value = "";
+        return showToast("Vui lòng kích hoạt hoặc chọn 1 sự kiện từ Lịch sử!", "error");
+    }
+
+    const file = input.files[0];
+    showToast("Đang phân tích và đối soát dữ liệu...", "info");
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+            if (rawRows.length < 1) return showToast("File không có dữ liệu!", "error");
+
+            let colIndex = -1;
+            let headerRowIndex = -1;
+            const firstFieldLabel = currentSession.fields[0].toLowerCase().trim();
+
+            // Tìm hàng tiêu đề và cột chứa thông tin định danh (Họ tên/ID)
+            for (let i = 0; i < Math.min(15, rawRows.length); i++) {
+                const row = rawRows[i] || [];
+                for (let j = 0; j < row.length; j++) {
+                    const cellVal = String(row[j] || "").toLowerCase().trim();
+                    if (!cellVal) continue;
+                    if (cellVal === firstFieldLabel || HEADER_KEYWORDS.some(k => cellVal.includes(k))) {
+                        colIndex = j; headerRowIndex = i; break;
+                    }
+                }
+                if (colIndex !== -1) break;
+            }
+
+            if (colIndex === -1) colIndex = 0, headerRowIndex = 0;
+            detectedHeaderName = String(rawRows[headerRowIndex][colIndex] || "CỘT A").toUpperCase();
+
+            // Lấy danh sách đã điểm danh từ Firebase
+            const presentValues = [];
+            const snapshot = await rdb.ref('dynamic_attendance/logs/' + currentSession.code).once('value');
+            if (snapshot.exists()) {
+                Object.values(snapshot.val()).forEach(log => {
+                    if (log.values && log.values[0]) presentValues.push(log.values[0].toString().trim().toLowerCase());
+                });
+            }
+
+            // Tiến hành lọc danh sách vắng
+            absentList = [];
+            let presentCount = 0;
+            masterData = rawRows.slice(headerRowIndex); 
+
+            for (let i = 1; i < masterData.length; i++) {
+                const row = masterData[i];
+                if (!row || row.length === 0) continue;
+                const identifier = row[colIndex] ? String(row[colIndex]).trim() : "";
+                if (!identifier) continue; 
+
+                if (presentValues.includes(identifier.toLowerCase())) presentCount++;
+                else absentList.push(row);
+            }
+
+            // Hiển thị Modal kết quả
+            document.getElementById('res-total').innerText = masterData.length - 1;
+            document.getElementById('res-present').innerText = presentCount;
+            document.getElementById('res-absent').innerText = absentList.length;
+            document.getElementById('detected-column-info').innerText = "NHẬN DIỆN: " + detectedHeaderName;
+            
+            document.getElementById('compare-modal').classList.remove('hidden');
+            document.getElementById('compare-modal').classList.add('flex');
+            input.value = ""; 
+        } catch (err) {
+            showToast("Lỗi đọc file Excel!", "error");
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+// Hàm để đóng Modal kết quả đối soát
+function closeComparisonModal() {
+    const modal = document.getElementById('compare-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+// 2. Xuất Báo cáo Tổng hợp (ÉP PHÔNG TIMES NEW ROMAN & CĂN GIỮA TOÀN BỘ)
+async function exportAbsentList() {
+    if (masterData.length === 0) return showToast("Dữ liệu trống!", "error");
+
+    showToast("Đang tạo báo cáo đối soát...", "info");
+
+    try {
+        const snapshot = await rdb.ref('dynamic_attendance/logs/' + currentSession.code).once('value');
+        const presentLogs = snapshot.exists() ? Object.values(snapshot.val()) : [];
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('DoiSoatTongHop');
+
+        const attendeeFields = ["STT", "Dấu thời gian", ...currentSession.fields];
+        const masterHeadersRaw = masterData[0] || [];
+        const absentHeaders = ["STT", ...masterHeadersRaw];
+        const maxCols = Math.max(attendeeFields.length, absentHeaders.length);
+
+        // Khóa các dòng tiêu đề (Dòng 1, 2, 3)
+        worksheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 3 }];
+
+        // --- DÒNG 1: TIÊU ĐỀ CHÍNH ---
+        worksheet.mergeCells(1, 1, 1, maxCols);
+        const t1 = worksheet.getCell(1, 1);
+        t1.value = "S-CHECK PRO - BÁO CÁO ĐỐI SOÁT TỔNG HỢP";
+        t1.font = { name: 'Times New Roman', size: 18, bold: true };
+        t1.alignment = { vertical: 'middle', horizontal: 'center' };
+        worksheet.getRow(1).height = 35;
+
+        // --- DÒNG 2: TÊN SỰ KIỆN ---
+        worksheet.mergeCells(2, 1, 2, maxCols);
+        const t2 = worksheet.getCell(2, 1);
+        t2.value = `SỰ KIỆN: ${currentSession.title.toUpperCase()}`;
+        t2.font = { name: 'Times New Roman', size: 14, bold: true, color: { argb: 'FF334155' } };
+        t2.alignment = { vertical: 'middle', horizontal: 'center' };
+        worksheet.getRow(2).height = 25;
+
+        // --- DÒNG 3: TRẠNG THÁI ---
+        worksheet.mergeCells(3, 1, 3, maxCols);
+        const t3 = worksheet.getCell(3, 1);
+        t3.value = {
+            richText: [
+                { text: "TRẠNG THÁI: ", font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF000000' } } },
+                { text: `CÓ MẶT (${presentLogs.length})`, font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF3F51B5' } } },
+                { text: " - ", font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF000000' } } },
+                { text: `VẮNG (${absentList.length})`, font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FFE11D48' } } }
+            ]
+        };
+        t3.alignment = { vertical: 'middle', horizontal: 'center' };
+        worksheet.getRow(3).height = 25;
+
+        let currentRow = 4;
+
+        // --- PHẦN I: DANH SÁCH THÀNH VIÊN THAM GIA ---
+        worksheet.mergeCells(currentRow, 1, currentRow, maxCols);
+        const sec1 = worksheet.getCell(currentRow, 1);
+        sec1.value = "➤ DANH SÁCH THÀNH VIÊN THAM GIA (ĐÃ ĐIỂM DANH)";
+        sec1.font = { name: 'Times New Roman', size: 13, bold: true, color: { argb: 'FF3F51B5' } };
+        sec1.alignment = { vertical: 'middle', horizontal: 'center' }; // Căn giữa tiêu đề mục
+        currentRow++;
+
+        const presentRows = presentLogs.map((log, i) => [i + 1, log.time, ...log.values]);
+        const table1 = worksheet.addTable({
+            name: 'TablePresent',
+            ref: `A${currentRow}`,
+            headerRow: true,
+            style: { theme: 'TableStyleMedium9', showRowStripes: true },
+            columns: attendeeFields.map(f => ({ name: f, filterButton: true })),
+            rows: presentRows.length > 0 ? presentRows : [new Array(attendeeFields.length).fill("")]
+        });
+
+        // Ép phông và căn giữa cho Bảng 1
+        const lastRow1 = currentRow + presentRows.length;
+        for (let r = currentRow; r <= lastRow1; r++) {
+            const row = worksheet.getRow(r);
+            row.eachCell({ includeEmpty: true }, (cell) => {
+                cell.font = { name: 'Times New Roman', size: 11 };
+                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            });
+        }
+
+        currentRow = lastRow1 + 3;
+
+        // --- PHẦN II: DANH SÁCH VẮNG MẶT (MÀU ĐỎ) ---
+        worksheet.mergeCells(currentRow, 1, currentRow, maxCols);
+        const sec2 = worksheet.getCell(currentRow, 1);
+        sec2.value = "➤ DANH SÁCH THÀNH VIÊN VẮNG MẶT (CHƯA ĐIỂM DANH)";
+        sec2.font = { name: 'Times New Roman', size: 13, bold: true, color: { argb: 'FFE11D48' } };
+        sec2.alignment = { vertical: 'middle', horizontal: 'center' }; // Căn giữa tiêu đề mục
+        currentRow++;
+
+        const absentRowsData = absentList.map((data, i) => [i + 1, ...data]);
+        const table2 = worksheet.addTable({
+            name: 'TableAbsent',
+            ref: `A${currentRow}`,
+            headerRow: true,
+            style: { theme: 'TableStyleNone', showRowStripes: false }, 
+            columns: absentHeaders.map(h => ({ name: h, filterButton: true })),
+            rows: absentRowsData.length > 0 ? absentRowsData : [new Array(absentHeaders.length).fill("")]
+        });
+
+        // Định dạng Header và Body cho Bảng 2 (Bảng Đỏ)
+        const headerRow2 = worksheet.getRow(currentRow);
+        headerRow2.eachCell((cell) => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE11D48' } };
+            cell.font = { name: 'Times New Roman', bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'} };
+        });
+
+        const lastRow2 = currentRow + absentRowsData.length;
+        for (let r = currentRow + 1; r <= lastRow2; r++) {
+            const row = worksheet.getRow(r);
+            const isAlt = (r - currentRow) % 2 === 0;
+            row.eachCell({ includeEmpty: true }, (cell) => {
+                cell.font = { name: 'Times New Roman', size: 11 };
+                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                cell.border = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'} };
+                if (isAlt) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF1F2' } };
+            });
+        }
+
+        // --- DÒNG GHI CHÚ CHÂN TRANG (FOOTER) ---
+        const footerRowIndex = lastRow2 + 2;
+        worksheet.mergeCells(footerRowIndex, 1, footerRowIndex, maxCols);
+        const footerCell = worksheet.getCell(footerRowIndex, 1);
+        footerCell.value = `Báo cáo được xuất từ hệ thống S-CHECK Pro vào lúc ${new Date().toLocaleString('vi-VN')}`;
+        footerCell.font = { name: 'Times New Roman', italic: true, size: 10, color: { argb: 'FF7F7F7F' } };
+        footerCell.alignment = { vertical: 'middle', horizontal: 'center' }; // Cho footer vô giữa luôn theo ý bạn
+
+        // Độ rộng cột
+        worksheet.columns.forEach((col, i) => {
+            col.width = i === 0 ? 8 : 28;
+        });
+
+        // Tải file
+        const buffer = await workbook.xlsx.writeBuffer();
+        saveAs(new Blob([buffer]), `Báo Cáo Đối Soát Vắng ${currentSession.title}.xlsx`);
+        showToast("Xuất báo cáo thành công!", "success");
+
+    } catch (e) {
+        console.error(e);
+        showToast("Lỗi khi tạo file báo cáo!", "error");
+    }
+}
+
+async function deleteSession(code) {
+    const user = auth.currentUser;
+    if(!user) return;
+
+    showConfirm(`XÁC NHẬN: Bạn muốn xóa vĩnh viễn sự kiện này?`, async () => {
+        try {
+            showToast("Đang xóa dữ liệu...", "info");
+            
+            // 1. Xóa logs (danh sách điểm danh)
+            await rdb.ref('dynamic_attendance/logs/' + code).remove();
+            
+            // 2. Xóa cấu hình session
+            await rdb.ref('dynamic_attendance/sessions/' + code).remove();
+            
+            // 3. Xóa index trong danh sách của User
+            await rdb.ref(`dynamic_attendance/users/${user.uid}/my_sessions/${code}`).remove();
+
+            showToast("Đã xóa sự kiện thành công!", "success");
+            
+            // Tải lại danh sách lịch sử để cập nhật giao diện
+            showHistory(); 
+            
+            // Nếu đang xem báo cáo của chính cái vừa xóa thì reset giao diện chính luôn
+            if(currentSession && currentSession.code === code) {
+                resetEventForm();
+            }
+        } catch (e) {
+            console.error(e);
+            showToast("Lỗi khi xóa dữ liệu!", "error");
+        }
+    });
+}
+
+// --- HỆ THỐNG XỬ LÝ MODAL KÉO THẢ FILE (MỚI) ---
+
+// 1. Hàm mở Modal
+function openUploadModal() {
+    if (!currentSession || !currentSession.code) {
+        return showToast("Vui lòng kích hoạt hoặc chọn 1 sự kiện!", "error");
+    }
+    const modal = document.getElementById('upload-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    // Khởi tạo các sự kiện kéo thả khi modal mở
+    initDragAndDrop();
+}
+
+// 2. Hàm đóng Modal
+function closeUploadModal() {
+    const modal = document.getElementById('upload-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// 3. Logic xử lý Kéo và Thả
+function initDragAndDrop() {
+    const dropZone = document.getElementById('drop-zone');
+    const dropOverlay = document.getElementById('drop-overlay');
+    const fileInput = document.getElementById('master-file-input');
+
+    // Ngăn chặn hành động mở file mặc định của trình duyệt
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, e => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, false);
+    });
+
+    // Khi đang kéo file vào vùng Drop Zone (Hiện overlay xanh)
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => {
+            dropOverlay.classList.remove('hidden');
+            dropOverlay.classList.add('flex');
+        });
+    });
+
+    // Khi kéo file ra khỏi vùng hoặc đã thả xong (Ẩn overlay)
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => {
+            dropOverlay.classList.add('hidden');
+            dropOverlay.classList.remove('flex');
+        });
+    });
+
+    // Xử lý khi thả file (Quan trọng nhất)
+    dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+
+        if (files.length > 0) {
+            // Kiểm tra xem có phải file Excel không
+            const file = files[0];
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (ext !== 'xlsx' && ext !== 'xls') {
+                return showToast("Hệ thống chỉ hỗ trợ tệp Excel!", "error");
+            }
+
+            // Gán file đã thả vào input file ẩn và chạy hàm xử lý đối soát có sẵn của bạn
+            fileInput.files = files;
+            handleFileSelected(fileInput); // Gọi hàm đối soát gốc của bạn
+            closeUploadModal();            // Đóng modal chọn file
+        }
+    });
+}
+
+// 4. Sửa lại hàm prepareAbsentCheck trong lịch sử để nó cũng mở Modal này
+function prepareAbsentCheck(code, title, fieldsBase64) {
+    try {
+        const fields = JSON.parse(decodeURIComponent(escape(atob(fieldsBase64))));
+        currentSession = {
+            code: code,
+            title: title,
+            fields: fields
+        };
+        // Mở modal kéo thả thay vì mở trực tiếp trình chọn tệp
+        openUploadModal();
+    } catch (e) {
+        console.error("Lỗi chuẩn bị đối soát:", e);
+        showToast("Lỗi xử lý dữ liệu sự kiện!", "error");
+    }
+}
+
 </script>
 <!-- MODAL LỊCH SỬ SỰ KIỆN -->
 <div id="history-modal" class="fixed inset-0 z-[10004] hidden items-center justify-center bg-black/90 backdrop-blur-md p-4">
@@ -2875,6 +3269,83 @@ function getUniqueDeviceId() {
         </div>
         <input type="text" id="history-search" oninput="filterHistory()" placeholder="Tìm tên sự kiện..." class="w-full p-3 mb-4 rounded-xl text-xs bg-white/5 border border-white/10">
         <div id="history-list" class="flex-1 overflow-y-auto space-y-3 custom-scrollbar"></div>
+    </div>
+</div>
+
+<div id="compare-modal" class="fixed inset-0 z-[12000] hidden items-center justify-center bg-black/90 backdrop-blur-md p-4">
+    <div class="glass p-8 rounded-[32px] max-w-sm w-full border border-white/10 space-y-6 text-center animate-in zoom-in duration-300">
+        <div class="flex flex-col items-center gap-2">
+            <div class="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center text-amber-500 mb-2">
+                <i class="fa-solid fa-chart-pie text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-black uppercase italic text-white">Kết quả đối soát</h3>
+            <p id="detected-column-info" class="text-[9px] text-emerald-400 font-bold uppercase tracking-widest"></p>
+        </div>
+        <div class="grid grid-cols-1 gap-3">
+            <div class="bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center text-[10px] font-black uppercase">
+                <span class="text-slate-400">Tổng danh sách</span>
+                <span id="res-total" class="text-lg text-white">0</span>
+            </div>
+            <div class="bg-emerald-500/5 p-4 rounded-2xl border border-emerald-500/10 flex justify-between items-center text-[10px] font-black uppercase">
+                <span class="text-emerald-400">Đã có mặt</span>
+                <span id="res-present" class="text-lg text-emerald-400">0</span>
+            </div>
+            <div class="bg-red-500/5 p-4 rounded-2xl border border-red-500/10 flex justify-between items-center text-[10px] font-black uppercase">
+                <span class="text-red-500">Vắng mặt</span>
+                <span id="res-absent" class="text-lg text-red-500">0</span>
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="closeComparisonModal()" class="flex-1 py-4 bg-white/5 rounded-2xl font-black uppercase text-[10px] text-slate-400">Đóng</button>
+            <button onclick="exportAbsentList()" class="flex-1 py-4 bg-emerald-600 rounded-2xl font-black uppercase text-[10px] text-white">Tải Báo Cáo</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL KÉO THẢ FILE ĐỐI SOÁT -->
+<div id="upload-modal" class="fixed inset-0 z-[11000] hidden items-center justify-center bg-black/95 backdrop-blur-xl p-4" onclick="closeUploadModal()">
+    <div class="glass p-8 lg:p-12 rounded-[40px] max-w-2xl w-full text-center space-y-8 animate-in zoom-in duration-300 border border-white/10" onclick="event.stopPropagation()">
+        
+        <!-- Header Modal -->
+        <div class="space-y-2">
+            <div class="relative w-24 h-16 mx-auto mb-4">
+                <div class="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full"></div>
+                <i class="fa-solid fa-file-excel text-5xl text-emerald-400 relative z-10"></i>
+            </div>
+            <h3 class="text-2xl lg:text-3xl font-black uppercase italic text-white">Đối soát danh sách</h3>
+            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[2px]">Tải lên file Excel danh sách đầy đủ để hệ thống tự động lọc vắng</p>
+        </div>
+
+        <!-- Vùng Kéo Thả (Drop Zone) -->
+        <div id="drop-zone" 
+             class="group relative border-2 border-dashed border-white/10 rounded-[32px] p-12 lg:p-20 transition-all duration-300 hover:border-indigo-500/50 hover:bg-white/5 cursor-pointer"
+             onover="handleDragOver(event)"
+             onleave="handleDragLeave(event)"
+             ondrop="handleDrop(event)"
+             onclick="document.getElementById('master-file-input').click()">
+            
+            <div class="space-y-6">
+                <!-- Nút Browse -->
+                <button class="bg-gradient-to-r from-pink-500 to-rose-500 px-10 py-4 rounded-full text-white font-black uppercase text-xs shadow-lg shadow-rose-500/20 group-hover:scale-110 transition-transform flex items-center gap-3 mx-auto">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Bấm để chọn tệp
+                </button>
+                
+                <div class="space-y-1">
+                    <p class="text-white font-bold text-sm">Hoặc kéo thả file Excel vào đây</p>
+                    <p class="text-slate-500 text-[10px] font-medium italic">Hỗ trợ định dạng .xlsx, .xls</p>
+                </div>
+            </div>
+
+            <!-- Hiệu ứng khi đang kéo file đè lên -->
+            <div id="drop-overlay" class="absolute inset-0 bg-indigo-600/20 rounded-[30px] hidden items-center justify-center backdrop-blur-sm border-2 border-indigo-500 shadow-[0_0_50px_rgba(99,102,241,0.3)]">
+                 <div class="text-center animate-bounce">
+                    <i class="fa-solid fa-file-circle-check text-5xl text-white"></i>
+                    <p class="text-white font-black uppercase text-sm mt-4 italic">Thả file để check ngay!</p>
+                 </div>
+            </div>
+        </div>
+
+        <button onclick="closeUploadModal()" class="text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors">Hủy bỏ thao tác</button>
     </div>
 </div>
 
