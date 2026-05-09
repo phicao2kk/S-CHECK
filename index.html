@@ -1279,6 +1279,8 @@ function checkAuthState() {
             return;
         }
 
+        hideInitialLoader(); 
+
         if (user) {
             // CẬP NHẬT LẠI THỜI GIAN HOẠT ĐỘNG
             localStorage.setItem('scheck_last_active', Date.now());
@@ -1335,7 +1337,14 @@ function checkCode(forced) {
     showView('user');
     const loaderText = document.getElementById('loader-text');
     
-    // Xử lý mã phòng (slug)
+    // --- LOGIC MỚI 1: CẦU CHÌ AN TOÀN (TIMEOUT) ---
+    // Nếu sau 15 giây mà Firebase không phản hồi, tự động ngắt và báo lỗi mạng
+    const networkTimeout = setTimeout(() => {
+        hideInitialLoader();
+        showToast("⚠️ Kết nối mạng quá yếu, vui lòng tải lại trang hoặc kiểm tra 4G!", "error");
+    }, 15000); 
+
+    // Xử lý mã phòng (slug) - GIỮ NGUYÊN LOGIC CỦA BẠN
     let roomCode = forced.toLowerCase().trim();
     roomCode = roomCode.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a")
                        .replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e")
@@ -1348,6 +1357,10 @@ function checkCode(forced) {
     
     // 2. Bắt đầu quá trình quét
     rdb.ref('dynamic_attendance/sessions/' + roomCode).once('value', snap => {
+        
+        // --- LOGIC MỚI 2: HỦY CẦU CHÌ KHI CÓ DỮ LIỆU ---
+        clearTimeout(networkTimeout); 
+
         if(!snap.exists()) {
             showToast("Phòng không tồn tại!", "error");
             hideInitialLoader(); 
@@ -1357,25 +1370,28 @@ function checkCode(forced) {
         
         userSession = snap.val();
 
-        // GIAI ĐOẠN 1: Tìm thấy tín hiệu cực nhanh (Sau 0.5 giây)
+        // GIAI ĐOẠN 1: Tìm thấy tín hiệu (Sau 0.5 giây) - GIỮ NGUYÊN
         setTimeout(() => {
-            loaderText.innerHTML = `<span class="text-emerald-400 font-bold">ĐÃ KẾT NỐI TÍN HIỆU...</span>`;
+            if(loaderText) loaderText.innerHTML = `<span class="text-emerald-400 font-bold">ĐÃ KẾT NỐI TÍN HIỆU...</span>`;
         }, 500);
 
-        // GIAI ĐOẠN 2: Hiển thị tên sự kiện (Sau 1.2 giây)
+        // GIAI ĐOẠN 2: Hiển thị tên sự kiện (Sau 1.2 giây) - GIỮ NGUYÊN
         setTimeout(() => {
-            loaderText.innerHTML = `
+            if(loaderText) loaderText.innerHTML = `
                 <span class="text-white/40 text-[7px] tracking-[3px]">TRUY CẬP VÀO</span><br>
                 <span class="text-indigo-400 text-[11px] font-black italic">${userSession.title.toUpperCase()}</span>`;
         }, 1200);
 
-        // GIAI ĐOẠN 3: Hoàn tất và hiện Form (Tổng cộng 2 giây)
+        // GIAI ĐOẠN 3: Hoàn tất và hiện Form (Tổng cộng 2 giây) - GIỮ NGUYÊN
         setTimeout(() => {
-            // Render Form dữ liệu với tiêu đề mục rõ ràng
-            document.getElementById('u-step-2').classList.remove('hidden');
-            document.getElementById('u-title').innerText = userSession.title;
+            const step2 = document.getElementById('u-step-2');
+            const uTitle = document.getElementById('u-title');
+            const uForm = document.getElementById('u-form');
+
+            if(step2) step2.classList.remove('hidden');
+            if(uTitle) uTitle.innerText = userSession.title;
             
-            document.getElementById('u-form').innerHTML = userSession.fields.map(f => `
+            if(uForm) uForm.innerHTML = userSession.fields.map(f => `
                 <div class="space-y-2 mb-5 field-container">
                     <div class="flex items-center gap-2 ml-4">
                         <div class="dot-signal bg-indigo-500/50"></div>
@@ -1387,6 +1403,13 @@ function checkCode(forced) {
             // Tắt Radar loading
             hideInitialLoader();
         }, 2000);
+
+    }).catch(error => {
+        // --- LOGIC MỚI 3: BẪY LỖI NẾU MẤT MẠNG HOẶC LỖI DATABASE ---
+        clearTimeout(networkTimeout);
+        hideInitialLoader();
+        showToast("Lỗi kết nối hệ thống. Vui lòng kiểm tra mạng!", "error");
+        console.error("Firebase Error:", error);
     });
 }
 
@@ -2512,19 +2535,8 @@ function setDeviceType(type) {
     loader.style.opacity = '1';
     loaderText.innerText = "ĐANG KHỞI TẠO KHÔNG GIAN LÀM VIỆC...";
 
-    // 3. Chờ 2.5 giây để nhìn cho sướng mắt rồi mới vào Login
-    setTimeout(() => {
-        // Gọi hàm kiểm tra đăng nhập
-        checkAuthState();
-        
-        // Ẩn Radar mượt mà
-        loader.style.opacity = '0';
-        loader.style.transition = 'opacity 1s ease';
-        setTimeout(() => {
-            loader.classList.add('hidden');
-        }, 1000);
-        
-    }, 2500); // 2500ms = 2.5 giây
+    // Gọi hàm kiểm tra đăng nhập
+    checkAuthState();
 }
 
 // 2. Chèn vào hàm window.onload cũ của bạn
