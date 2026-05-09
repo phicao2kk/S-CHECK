@@ -2223,7 +2223,7 @@ function resetEventForm() {
 async function exportToExcel() {
     // 1. Kiểm tra quyền truy cập dữ liệu
     if (!currentSession || !currentSession.code) {
-        return showToast("Vui lòng kích hoạt hoặc chọn một sự kiện!", "error");
+        return showToast("Vui lòng kích hoạt hoặc chọn một sự kiện trong lịch sử!", "error");
     }
 
     showToast("Đang tạo file báo cáo chuyên nghiệp...", "info");
