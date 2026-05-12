@@ -3324,7 +3324,7 @@ async function exportAbsentList() {
                     const item = matchedByGroup[group][idx];
                     const member = item.member;
                     const values = member.row;
-                    const rowData = [idx + 1, values[0] || "", values[1] || ""];
+                    const rowData = [idx + 1, values[1] || "", values[2] || ""];
                     for (let c = 0; c < rowData.length; c++) {
                         setCell(currentRow, c + 1, rowData[c] !== undefined ? rowData[c] : "", {});
                     }
@@ -3375,7 +3375,7 @@ async function exportAbsentList() {
                 for (let idx = 0; idx < absentByGroup[group].length; idx++) {
                     const m = absentByGroup[group][idx];
                     const values = m.row;
-                    const rowData = [idx + 1, values[0] || "", values[1] || ""];
+                    const rowData = [idx + 1, values[1] || "", values[2] || ""];
                     for (let c = 0; c < rowData.length; c++) {
                         setCell(currentRow, c + 1, rowData[c] !== undefined ? rowData[c] : "", {});
                     }
