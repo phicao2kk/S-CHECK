@@ -2919,27 +2919,46 @@ function getUniqueDeviceId() {
     return deviceId;
 }
 
-// --- BIẾN TOÀN CỤC CHO ĐỐI SOÁT ---
-let masterData = []; 
-let absentList = [];
+// --- BIẾN TOÀN CỤC CHO ĐỐI SOÁT (thêm biến lưu nhóm) ---
+let masterData = [];          // giữ header và dữ liệu thô
+let absentList = [];          // mỗi phần tử: [nhóm, ...các cột dữ liệu]
+let allMembersByGroup = {};   // { "Nhóm 1": [{ identifier, row }], ... }
+let memberGroupMap = {};       // { "identifier": "Nhóm 1" }
+let groupHeaders = [];         // lưu tiêu đề cột (Họ và Tên, Lớp / Phòng ban)
+function normalizeVietnameseName(name) {
+    if (!name) return "";
+    // 1. Chuyển sang chữ thường
+    let str = name.toLowerCase().trim();
+    // 2. Bỏ dấu tiếng Việt
+    str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
+    str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
+    str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
+    str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
+    str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
+    str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
+    str = str.replace(/đ/g, "d");
+    // 3. Loại bỏ các từ đệm phổ biến (có thể mở rộng)
+    const stopWords = ["cao", "nguyễn", "trần", "thị", "văn", "hồ", "đỗ", "phạm", "lê", "hoàng", "phùng", "bùi", "đặng", "vũ", "võ", "dương", "lý", "ngô", "phan", "tạ", "trịnh", "đinh", "lương", "triệu"];
+    let words = str.split(/\s+/);
+    words = words.filter(w => !stopWords.includes(w));
+    // 4. Ghép lại, bỏ khoảng trắng thừa
+    return words.join(" ");
+}
+
 let detectedHeaderName = "";
 const HEADER_KEYWORDS = ['họ tên', 'họ và tên', 'tên', 'fullname', 'full name', 'name', 'mssv', 'mã số', 'mã sv', 'id', 'stt'];
 
 // 1. Xử lý khi chọn File Excel
 async function handleFileSelected(input) {
     if (!input.files || !input.files[0]) return;
-    
-    // THÊM DÒNG NÀY: Đóng ngay modal chọn tệp để hiện modal kết quả
     closeUploadModal();
-
-    // Kiểm tra xem Admin đã chọn Sự kiện nào chưa
     if (!currentSession || !currentSession.code) {
         input.value = "";
         return showToast("Vui lòng kích hoạt hoặc chọn 1 sự kiện từ Lịch sử!", "error");
     }
 
     const file = input.files[0];
-    showToast("Đang phân tích và đối soát dữ liệu...", "info");
+    showToast("Đang phân tích file (hỗ trợ nhiều nhóm & đối chiếu tên linh hoạt)...", "info");
 
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -2947,65 +2966,150 @@ async function handleFileSelected(input) {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-            const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
 
-            if (rawRows.length < 1) return showToast("File không có dữ liệu!", "error");
+            if (rows.length < 1) return showToast("File không có dữ liệu!", "error");
 
-            let colIndex = -1;
-            let headerRowIndex = -1;
-            const firstFieldLabel = currentSession.fields[0].toLowerCase().trim();
-
-            // Tìm hàng tiêu đề và cột chứa thông tin định danh (Họ tên/ID)
-            for (let i = 0; i < Math.min(15, rawRows.length); i++) {
-                const row = rawRows[i] || [];
+            // --- Xác định cột định danh ---
+            const targetField = currentSession.fields[0].toLowerCase().trim();
+            let identifyCol = -1;
+            for (let i = 0; i < Math.min(15, rows.length); i++) {
+                const row = rows[i];
+                if (!row) continue;
                 for (let j = 0; j < row.length; j++) {
-                    const cellVal = String(row[j] || "").toLowerCase().trim();
-                    if (!cellVal) continue;
-                    if (cellVal === firstFieldLabel || HEADER_KEYWORDS.some(k => cellVal.includes(k))) {
-                        colIndex = j; headerRowIndex = i; break;
+                    const cell = (row[j] || "").toString().toLowerCase().trim();
+                    if (cell === targetField || cell.includes("họ tên") || cell.includes("họ và tên") || cell.includes("tên thành viên")) {
+                        identifyCol = j;
+                        break;
                     }
                 }
-                if (colIndex !== -1) break;
+                if (identifyCol !== -1) break;
+            }
+            if (identifyCol === -1) identifyCol = 0;
+
+            // --- Phát hiện nhóm và thu thập thành viên (có chuẩn hóa tên) ---
+            const groupKeywords = ["nhóm", "tổ", "đội", "team", "group", "phòng", "ban"];
+            let currentGroup = null;
+            let rawMembers = [];         // { group, row, identifier, normalizedId }
+            let tempGroupHeaders = [];
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+
+                const firstCell = (row[0] || "").toString().toLowerCase().trim();
+                let isGroupRow = false;
+                for (let kw of groupKeywords) {
+                    if (firstCell.includes(kw)) {
+                        isGroupRow = true;
+                        break;
+                    }
+                }
+
+                if (isGroupRow) {
+                    currentGroup = firstCell;
+                    if (i + 1 < rows.length && rows[i+1]) tempGroupHeaders = rows[i+1];
+                    continue;
+                }
+
+                if (currentGroup) {
+                    const isHeaderRow = (row[identifyCol] && 
+                        (row[identifyCol].toString().toLowerCase().includes("tên") ||
+                         row[identifyCol].toString().toLowerCase().includes("họ") ||
+                         row[identifyCol].toString().toLowerCase() === targetField));
+                    if (isHeaderRow) continue;
+
+                    let identifier = (row[identifyCol] !== undefined && row[identifyCol] !== null) ? row[identifyCol].toString().trim() : "";
+                    if (identifier === "") continue;
+
+                    const lowerId = identifier.toLowerCase();
+                    const skipRubbish = ["stt", "số thứ tự", "họ và tên", "lớp", "phòng ban"];
+                    let isRubbish = false;
+                    for (let kw of skipRubbish) {
+                        if (lowerId === kw || lowerId.includes(kw)) {
+                            isRubbish = true;
+                            break;
+                        }
+                    }
+                    if (isRubbish) continue;
+
+                    // CHUẨN HÓA TÊN
+                    const normalizedId = normalizeVietnameseName(identifier);
+                    rawMembers.push({
+                        group: currentGroup,
+                        row: [...row],
+                        identifier: lowerId,        // giữ gốc để hiển thị
+                        normalizedId: normalizedId
+                    });
+                }
             }
 
-            if (colIndex === -1) colIndex = 0, headerRowIndex = 0;
-            detectedHeaderName = String(rawRows[headerRowIndex][colIndex] || "CỘT A").toUpperCase();
-
-            // Lấy danh sách đã điểm danh từ Firebase
-            const presentValues = [];
+            // --- Lấy danh sách đã điểm danh từ Firebase (cũng chuẩn hóa tên) ---
+            const presentMap = new Map(); // key: normalizedId, value: log object
             const snapshot = await rdb.ref('dynamic_attendance/logs/' + currentSession.code).once('value');
             if (snapshot.exists()) {
                 Object.values(snapshot.val()).forEach(log => {
-                    if (log.values && log.values[0]) presentValues.push(log.values[0].toString().trim().toLowerCase());
+                    if (log.values && log.values[0]) {
+                        const rawName = log.values[0].toString().trim();
+                        const normalized = normalizeVietnameseName(rawName);
+                        presentMap.set(normalized, log);
+                    }
                 });
             }
 
-            // Tiến hành lọc danh sách vắng
-            absentList = [];
-            let presentCount = 0;
-            masterData = rawRows.slice(headerRowIndex); 
+            // --- Xây dựng allMembersByGroup và phân loại có mặt / vắng dựa trên normalizedId ---
+            allMembersByGroup = {};
+            memberGroupMap = {};     // ánh xạ normalizedId -> group
+            const presentByGroup = {};
+            const absentByGroup = {};
 
-            for (let i = 1; i < masterData.length; i++) {
-                const row = masterData[i];
-                if (!row || row.length === 0) continue;
-                const identifier = row[colIndex] ? String(row[colIndex]).trim() : "";
-                if (!identifier) continue; 
+            for (let member of rawMembers) {
+                const normId = member.normalizedId;
+                if (!allMembersByGroup[member.group]) allMembersByGroup[member.group] = [];
+                allMembersByGroup[member.group].push(member);
+                memberGroupMap[normId] = member.group;
 
-                if (presentValues.includes(identifier.toLowerCase())) presentCount++;
-                else absentList.push(row);
+                if (presentMap.has(normId)) {
+                    if (!presentByGroup[member.group]) presentByGroup[member.group] = [];
+                    presentByGroup[member.group].push(member);
+                } else {
+                    if (!absentByGroup[member.group]) absentByGroup[member.group] = [];
+                    absentByGroup[member.group].push(member);
+                }
             }
 
-            // Hiển thị Modal kết quả
-            document.getElementById('res-total').innerText = masterData.length - 1;
-            document.getElementById('res-present').innerText = presentCount;
-            document.getElementById('res-absent').innerText = absentList.length;
-            document.getElementById('detected-column-info').innerText = "NHẬN DIỆN: " + detectedHeaderName;
-            
+            // Lưu header chung
+            groupHeaders = tempGroupHeaders.length ? tempGroupHeaders : (rows[0] || []);
+            while (groupHeaders.length < currentSession.fields.length) groupHeaders.push("");
+
+            // Tạo absentList (để xuất)
+            absentList = [];
+            for (let group in absentByGroup) {
+                for (let member of absentByGroup[group]) {
+                    absentList.push([group, ...member.row]);
+                }
+            }
+
+            // ========== TÍNH TOÁN SỐ LIỆU MỚI ==========
+            const totalMembers = rawMembers.length;
+            const totalPresentInMaster = Object.values(presentByGroup).reduce((sum, arr) => sum + arr.length, 0);
+            const totalPresentOutsider = presentMap.size - totalPresentInMaster;
+            const totalAbsent = totalMembers - totalPresentInMaster;
+
+            document.getElementById('res-total').innerText = totalMembers;
+            document.getElementById('res-present-in').innerText = totalPresentInMaster;
+            document.getElementById('res-present-out').innerText = totalPresentOutsider;
+            document.getElementById('res-absent').innerText = totalAbsent;
+            document.getElementById('detected-column-info').innerHTML = `${groupHeaders[identifyCol] || currentSession.fields[0]} · ${Object.keys(allMembersByGroup).length} nhóm · so sánh tên linh hoạt`;
+
             document.getElementById('compare-modal').classList.remove('hidden');
             document.getElementById('compare-modal').classList.add('flex');
-            input.value = ""; 
+            input.value = "";
+
         } catch (err) {
-            showToast("Lỗi đọc file Excel!", "error");
+            console.error(err);
+            showToast("Lỗi đọc file: " + err.message, "error");
+            input.value = "";
         }
     };
     reader.readAsArrayBuffer(file);
@@ -3022,147 +3126,212 @@ function closeComparisonModal() {
 
 // 2. Xuất Báo cáo Tổng hợp (ÉP PHÔNG TIMES NEW ROMAN & CĂN GIỮA TOÀN BỘ)
 async function exportAbsentList() {
-    if (masterData.length === 0) return showToast("Dữ liệu trống!", "error");
+    if (!allMembersByGroup || Object.keys(allMembersByGroup).length === 0) {
+        return showToast("Chưa có dữ liệu đối soát, vui lòng tải file Excel trước!", "error");
+    }
 
-    showToast("Đang tạo báo cáo đối soát...", "info");
+    showToast("Đang tạo báo cáo đối soát (hỗ trợ người lạ)...", "info");
 
     try {
         const snapshot = await rdb.ref('dynamic_attendance/logs/' + currentSession.code).once('value');
         const presentLogs = snapshot.exists() ? Object.values(snapshot.val()) : [];
 
+        // Map normal hóa tên từ danh sách master
+        const masterNormMap = new Map(); // normId -> member object
+        for (let group in allMembersByGroup) {
+            for (let member of allMembersByGroup[group]) {
+                masterNormMap.set(member.normalizedId, member);
+            }
+        }
+
+        // Phân loại những người đã điểm danh: có trong master và không
+        const matchedLogs = [];   // những log có trong master (kèm member)
+        const unmatchedLogs = []; // những log không có trong master
+        for (let log of presentLogs) {
+            if (log.values && log.values[0]) {
+                const rawName = log.values[0].toString().trim();
+                const norm = normalizeVietnameseName(rawName);
+                if (masterNormMap.has(norm)) {
+                    matchedLogs.push({ log, member: masterNormMap.get(norm) });
+                } else {
+                    unmatchedLogs.push(log);
+                }
+            }
+        }
+
+        // Nhóm matchedLogs theo group
+        const matchedByGroup = {};
+        for (let item of matchedLogs) {
+            const group = item.member.group;
+            if (!matchedByGroup[group]) matchedByGroup[group] = [];
+            matchedByGroup[group].push(item);
+        }
+
+        // Nhóm vắng (những người trong master không có trong presentLogs)
+        const presentNormSet = new Set(matchedLogs.map(x => x.member.normalizedId));
+        const absentByGroup = {};
+        for (let group in allMembersByGroup) {
+            absentByGroup[group] = allMembersByGroup[group].filter(m => !presentNormSet.has(m.normalizedId));
+        }
+
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('DoiSoatTongHop');
+        const fieldCount = currentSession.fields.length;
+        const maxCols = Math.max(fieldCount + 2, fieldCount + 1, 5);
+        let currentRow = 1;
 
-        const attendeeFields = ["STT", "Dấu thời gian", ...currentSession.fields];
-        const masterHeadersRaw = masterData[0] || [];
-        const absentHeaders = ["STT", ...masterHeadersRaw];
-        const maxCols = Math.max(attendeeFields.length, absentHeaders.length);
-
-        // Khóa các dòng tiêu đề (Dòng 1, 2, 3)
-        worksheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 3 }];
-
-        // --- DÒNG 1: TIÊU ĐỀ CHÍNH ---
-        worksheet.mergeCells(1, 1, 1, maxCols);
-        const t1 = worksheet.getCell(1, 1);
-        t1.value = "S-CHECK PRO - BÁO CÁO ĐỐI SOÁT TỔNG HỢP";
-        t1.font = { name: 'Times New Roman', size: 18, bold: true };
-        t1.alignment = { vertical: 'middle', horizontal: 'center' };
-        worksheet.getRow(1).height = 35;
-
-        // --- DÒNG 2: TÊN SỰ KIỆN ---
-        worksheet.mergeCells(2, 1, 2, maxCols);
-        const t2 = worksheet.getCell(2, 1);
-        t2.value = `SỰ KIỆN: ${currentSession.title.toUpperCase()}`;
-        t2.font = { name: 'Times New Roman', size: 14, bold: true, color: { argb: 'FF334155' } };
-        t2.alignment = { vertical: 'middle', horizontal: 'center' };
-        worksheet.getRow(2).height = 25;
-
-        // --- DÒNG 3: TRẠNG THÁI ---
-        worksheet.mergeCells(3, 1, 3, maxCols);
-        const t3 = worksheet.getCell(3, 1);
-        t3.value = {
-            richText: [
-                { text: "TRẠNG THÁI: ", font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF000000' } } },
-                { text: `CÓ MẶT (${presentLogs.length})`, font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF3F51B5' } } },
-                { text: " - ", font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF000000' } } },
-                { text: `VẮNG (${absentList.length})`, font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FFE11D48' } } }
-            ]
+        const setCell = (row, col, value, options = {}) => {
+            const cell = worksheet.getCell(row, col);
+            cell.value = value;
+            cell.font = { name: 'Times New Roman', ...options.font };
+            cell.alignment = { vertical: 'middle', horizontal: options.align || 'center', wrapText: false };
+            cell.border = options.border || { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+            if (options.fill) cell.fill = options.fill;
+            return cell;
         };
-        t3.alignment = { vertical: 'middle', horizontal: 'center' };
-        worksheet.getRow(3).height = 25;
+        const mergeAndSet = (startRow, startCol, endRow, endCol, value, font, align = 'center') => {
+            worksheet.mergeCells(startRow, startCol, endRow, endCol);
+            const cell = worksheet.getCell(startRow, startCol);
+            cell.value = value;
+            cell.font = { name: 'Times New Roman', ...font };
+            cell.alignment = { vertical: 'middle', horizontal: align };
+        };
 
-        let currentRow = 4;
+        // Dòng 1-3: tiêu đề
+        mergeAndSet(1, 1, 1, maxCols, "S-CHECK PRO - BÁO CÁO ĐỐI SOÁT TỔNG HỢP", { size: 18, bold: true });
+        mergeAndSet(2, 1, 2, maxCols, `SỰ KIỆN: ${currentSession.title.toUpperCase()}`, { size: 14, bold: true, color: { argb: 'FF334155' } });
+        const totalPresent = presentLogs.length;
+        let totalAbsent = 0;
+        for (let g in absentByGroup) totalAbsent += absentByGroup[g].length;
+        mergeAndSet(3, 1, 3, maxCols, 
+            { richText: [
+                { text: "TRẠNG THÁI: ", font: { name: 'Times New Roman', size: 12, bold: true } },
+                { text: `CÓ MẶT (${totalPresent})`, font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF3F51B5' } } },
+                { text: " - ", font: { name: 'Times New Roman', size: 12, bold: true } },
+                { text: `VẮNG (${totalAbsent})`, font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FFE11D48' } } }
+            ] }, 
+            { size: 12 }, 'center');
+        currentRow = 5;
 
-        // --- PHẦN I: DANH SÁCH THÀNH VIÊN THAM GIA ---
-        worksheet.mergeCells(currentRow, 1, currentRow, maxCols);
-        const sec1 = worksheet.getCell(currentRow, 1);
-        sec1.value = "➤ DANH SÁCH THÀNH VIÊN THAM GIA (ĐÃ ĐIỂM DANH)";
-        sec1.font = { name: 'Times New Roman', size: 13, bold: true, color: { argb: 'FF3F51B5' } };
-        sec1.alignment = { vertical: 'middle', horizontal: 'center' }; // Căn giữa tiêu đề mục
+        // ========== PHẦN 1: DANH SÁCH THAM GIA ==========
+        mergeAndSet(currentRow, 1, currentRow, maxCols, "➤ DANH SÁCH THÀNH VIÊN THAM GIA (ĐÃ ĐIỂM DANH)", { size: 13, bold: true, color: { argb: 'FF3F51B5' } }, 'left');
         currentRow++;
 
-        const presentRows = presentLogs.map((log, i) => [i + 1, log.time, ...log.values]);
-        const table1 = worksheet.addTable({
-            name: 'TablePresent',
-            ref: `A${currentRow}`,
-            headerRow: true,
-            style: { theme: 'TableStyleMedium9', showRowStripes: true },
-            columns: attendeeFields.map(f => ({ name: f, filterButton: true })),
-            rows: presentRows.length > 0 ? presentRows : [new Array(attendeeFields.length).fill("")]
-        });
+        let hasPresentData = false;
 
-        // Ép phông và căn giữa cho Bảng 1
-        const lastRow1 = currentRow + presentRows.length;
-        for (let r = currentRow; r <= lastRow1; r++) {
-            const row = worksheet.getRow(r);
-            row.eachCell({ includeEmpty: true }, (cell) => {
-                cell.font = { name: 'Times New Roman', size: 11 };
-                cell.alignment = { vertical: 'middle', horizontal: 'center' };
-            });
+        // 1a. Những người có trong master (theo nhóm)
+        for (let group in matchedByGroup) {
+            if (matchedByGroup[group].length === 0) continue;
+            hasPresentData = true;
+            mergeAndSet(currentRow, 1, currentRow, maxCols, `📌 ${group.toUpperCase()}`, { size: 12, bold: true, color: { argb: 'FF3F51B5' } }, 'left');
+            currentRow++;
+            const headerCells = ["STT", "Dấu thời gian", ...currentSession.fields];
+            for (let c = 0; c < headerCells.length; c++) {
+                setCell(currentRow, c + 1, headerCells[c], {
+                    font: { bold: true, color: { argb: 'FFFFFFFF' } },
+                    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3F51B5' } },
+                    align: 'center'
+                });
+            }
+            currentRow++;
+            for (let idx = 0; idx < matchedByGroup[group].length; idx++) {
+                const item = matchedByGroup[group][idx];
+                const log = item.log;
+                const member = item.member;
+                const timeStr = log.time;
+                const values = member.row;
+                const rowData = [idx + 1, timeStr, ...values];
+                for (let c = 0; c < rowData.length; c++) {
+                    setCell(currentRow, c + 1, rowData[c] !== undefined ? rowData[c] : "", {});
+                }
+                currentRow++;
+            }
+            currentRow++;
         }
 
-        currentRow = lastRow1 + 3;
+        // 1b. Những người không có trong master (thành viên lạ)
+        if (unmatchedLogs.length > 0) {
+            hasPresentData = true;
+            mergeAndSet(currentRow, 1, currentRow, maxCols, `📌 THÀNH VIÊN KHÁC (KHÔNG CÓ TRONG DANH SÁCH)`, { size: 12, bold: true, color: { argb: 'FF3F51B5' } }, 'left');
+            currentRow++;
+            const headerCells = ["STT", "Dấu thời gian", ...currentSession.fields];
+            for (let c = 0; c < headerCells.length; c++) {
+                setCell(currentRow, c + 1, headerCells[c], {
+                    font: { bold: true, color: { argb: 'FFFFFFFF' } },
+                    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3F51B5' } },
+                    align: 'center'
+                });
+            }
+            currentRow++;
+            for (let idx = 0; idx < unmatchedLogs.length; idx++) {
+                const log = unmatchedLogs[idx];
+                const timeStr = log.time;
+                const values = log.values || [];
+                const rowData = [idx + 1, timeStr, ...values];
+                for (let c = 0; c < rowData.length; c++) {
+                    setCell(currentRow, c + 1, rowData[c] !== undefined ? rowData[c] : "", {});
+                }
+                currentRow++;
+            }
+            currentRow++;
+        }
 
-        // --- PHẦN II: DANH SÁCH VẮNG MẶT (MÀU ĐỎ) ---
-        worksheet.mergeCells(currentRow, 1, currentRow, maxCols);
-        const sec2 = worksheet.getCell(currentRow, 1);
-        sec2.value = "➤ DANH SÁCH THÀNH VIÊN VẮNG MẶT (CHƯA ĐIỂM DANH)";
-        sec2.font = { name: 'Times New Roman', size: 13, bold: true, color: { argb: 'FFE11D48' } };
-        sec2.alignment = { vertical: 'middle', horizontal: 'center' }; // Căn giữa tiêu đề mục
+        if (!hasPresentData) {
+            mergeAndSet(currentRow, 1, currentRow, maxCols, "Không có dữ liệu tham gia", { size: 11, italic: true }, 'center');
+            currentRow += 2;
+        }
+
+        // ========== PHẦN 2: DANH SÁCH VẮNG (CHỈ NHỮNG NGƯỜI TRONG MASTER) ==========
+        mergeAndSet(currentRow, 1, currentRow, maxCols, "➤ DANH SÁCH THÀNH VIÊN VẮNG MẶT (CHƯA ĐIỂM DANH)", { size: 13, bold: true, color: { argb: 'FFE11D48' } }, 'left');
         currentRow++;
 
-        const absentRowsData = absentList.map((data, i) => [i + 1, ...data]);
-        const table2 = worksheet.addTable({
-            name: 'TableAbsent',
-            ref: `A${currentRow}`,
-            headerRow: true,
-            style: { theme: 'TableStyleNone', showRowStripes: false }, 
-            columns: absentHeaders.map(h => ({ name: h, filterButton: true })),
-            rows: absentRowsData.length > 0 ? absentRowsData : [new Array(absentHeaders.length).fill("")]
-        });
-
-        // Định dạng Header và Body cho Bảng 2 (Bảng Đỏ)
-        const headerRow2 = worksheet.getRow(currentRow);
-        headerRow2.eachCell((cell) => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE11D48' } };
-            cell.font = { name: 'Times New Roman', bold: true, color: { argb: 'FFFFFFFF' } };
-            cell.alignment = { vertical: 'middle', horizontal: 'center' };
-            cell.border = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'} };
-        });
-
-        const lastRow2 = currentRow + absentRowsData.length;
-        for (let r = currentRow + 1; r <= lastRow2; r++) {
-            const row = worksheet.getRow(r);
-            const isAlt = (r - currentRow) % 2 === 0;
-            row.eachCell({ includeEmpty: true }, (cell) => {
-                cell.font = { name: 'Times New Roman', size: 11 };
-                cell.alignment = { vertical: 'middle', horizontal: 'center' };
-                cell.border = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'} };
-                if (isAlt) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF1F2' } };
-            });
+        let hasAbsent = false;
+        for (let group in absentByGroup) {
+            if (absentByGroup[group].length === 0) continue;
+            hasAbsent = true;
+            mergeAndSet(currentRow, 1, currentRow, maxCols, `📌 ${group.toUpperCase()}`, { size: 12, bold: true, color: { argb: 'FFE11D48' } }, 'left');
+            currentRow++;
+            const headerCells = ["STT", ...currentSession.fields];
+            for (let c = 0; c < headerCells.length; c++) {
+                setCell(currentRow, c + 1, headerCells[c], {
+                    font: { bold: true, color: { argb: 'FFFFFFFF' } },
+                    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE11D48' } },
+                    align: 'center'
+                });
+            }
+            currentRow++;
+            for (let idx = 0; idx < absentByGroup[group].length; idx++) {
+                const m = absentByGroup[group][idx];
+                const values = m.row;
+                const rowData = [idx + 1, ...values];
+                for (let c = 0; c < rowData.length; c++) {
+                    setCell(currentRow, c + 1, rowData[c] !== undefined ? rowData[c] : "", {});
+                }
+                currentRow++;
+            }
+            currentRow++;
         }
 
-        // --- DÒNG GHI CHÚ CHÂN TRANG (FOOTER) ---
-        const footerRowIndex = lastRow2 + 2;
-        worksheet.mergeCells(footerRowIndex, 1, footerRowIndex, maxCols);
-        const footerCell = worksheet.getCell(footerRowIndex, 1);
-        footerCell.value = `Báo cáo được xuất từ hệ thống S-CHECK Pro vào lúc ${new Date().toLocaleString('vi-VN')}`;
-        footerCell.font = { name: 'Times New Roman', italic: true, size: 10, color: { argb: 'FF7F7F7F' } };
-        footerCell.alignment = { vertical: 'middle', horizontal: 'center' }; // Cho footer vô giữa luôn theo ý bạn
+        if (!hasAbsent) {
+            mergeAndSet(currentRow, 1, currentRow, maxCols, "Không có thành viên vắng mặt", { size: 11, italic: true }, 'center');
+            currentRow += 2;
+        }
+
+        // Footer
+        mergeAndSet(currentRow, 1, currentRow, maxCols, `Báo cáo được xuất từ hệ thống S-CHECK Pro vào lúc ${new Date().toLocaleString('vi-VN')}`, { size: 10, italic: true, color: { argb: 'FF7F7F7F' } }, 'center');
 
         // Độ rộng cột
-        worksheet.columns.forEach((col, i) => {
-            col.width = i === 0 ? 8 : 28;
-        });
+        for (let i = 1; i <= maxCols; i++) {
+            worksheet.getColumn(i).width = i === 1 ? 8 : (i === 2 && maxCols > 2 ? 22 : 24);
+        }
 
-        // Tải file
         const buffer = await workbook.xlsx.writeBuffer();
         saveAs(new Blob([buffer]), `Báo Cáo Đối Soát Vắng ${currentSession.title}.xlsx`);
         showToast("Xuất báo cáo thành công!", "success");
 
     } catch (e) {
         console.error(e);
-        showToast("Lỗi khi tạo file báo cáo!", "error");
+        showToast("Lỗi khi tạo file báo cáo: " + e.message, "error");
     }
 }
 
@@ -3308,6 +3477,7 @@ function prepareAbsentCheck(code, title, fieldsBase64) {
     </div>
 </div>
 
+<!-- MODAL KẾT QUẢ ĐỐI SOÁT (THAY THẾ MODAL CŨ) -->
 <div id="compare-modal" class="fixed inset-0 z-[12000] hidden items-center justify-center bg-black/90 backdrop-blur-md p-4">
     <div class="glass p-8 rounded-[32px] max-w-sm w-full border border-white/10 space-y-6 text-center animate-in zoom-in duration-300">
         <div class="flex flex-col items-center gap-2">
@@ -3315,25 +3485,38 @@ function prepareAbsentCheck(code, title, fieldsBase64) {
                 <i class="fa-solid fa-chart-pie text-3xl"></i>
             </div>
             <h3 class="text-xl font-black uppercase italic text-white">Kết quả đối soát</h3>
-            <p id="detected-column-info" class="text-[9px] text-emerald-400 font-bold uppercase tracking-widest"></p>
+            <p id="detected-column-info" class="text-[9px] text-emerald-400 font-bold uppercase tracking-widest mt-1"></p>
         </div>
+        
         <div class="grid grid-cols-1 gap-3">
-            <div class="bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center text-[10px] font-black uppercase">
-                <span class="text-slate-400">Tổng danh sách</span>
-                <span id="res-total" class="text-lg text-white">0</span>
+            <!-- TỔNG DANH SÁCH -->
+            <div class="bg-white/5 p-4 rounded-2xl border border-white/5 flex justify-between items-center">
+                <span class="text-[11px] font-bold uppercase text-slate-400">📊 TỔNG DANH SÁCH</span>
+                <span id="res-total" class="text-xl font-black text-white">0</span>
             </div>
-            <div class="bg-emerald-500/5 p-4 rounded-2xl border border-emerald-500/10 flex justify-between items-center text-[10px] font-black uppercase">
-                <span class="text-emerald-400">Đã có mặt</span>
-                <span id="res-present" class="text-lg text-emerald-400">0</span>
+            
+            <!-- CÓ MẶT TRONG DANH SÁCH -->
+            <div class="bg-emerald-500/5 p-4 rounded-2xl border border-emerald-500/10 flex justify-between items-center">
+                <span class="text-[11px] font-bold uppercase text-emerald-400">✅ CÓ MẶT (TRONG DS)</span>
+                <span id="res-present-in" class="text-xl font-black text-emerald-400">0</span>
             </div>
-            <div class="bg-red-500/5 p-4 rounded-2xl border border-red-500/10 flex justify-between items-center text-[10px] font-black uppercase">
-                <span class="text-red-500">Vắng mặt</span>
-                <span id="res-absent" class="text-lg text-red-500">0</span>
+            
+            <!-- CÓ MẶT NGOÀI DANH SÁCH -->
+            <div class="bg-sky-500/5 p-4 rounded-2xl border border-sky-500/10 flex justify-between items-center">
+                <span class="text-[11px] font-bold uppercase text-sky-400">👤 CÓ MẶT (NGOÀI DS)</span>
+                <span id="res-present-out" class="text-xl font-black text-sky-400">0</span>
+            </div>
+            
+            <!-- VẮNG MẶT -->
+            <div class="bg-red-500/5 p-4 rounded-2xl border border-red-500/10 flex justify-between items-center">
+                <span class="text-[11px] font-bold uppercase text-red-500">❌ VẮNG MẶT</span>
+                <span id="res-absent" class="text-xl font-black text-red-500">0</span>
             </div>
         </div>
-        <div class="flex gap-3">
-            <button onclick="closeComparisonModal()" class="flex-1 py-4 bg-white/5 rounded-2xl font-black uppercase text-[10px] text-slate-400">Đóng</button>
-            <button onclick="exportAbsentList()" class="flex-1 py-4 bg-emerald-600 rounded-2xl font-black uppercase text-[10px] text-white">Tải Báo Cáo</button>
+        
+        <div class="flex gap-3 pt-2">
+            <button onclick="closeComparisonModal()" class="flex-1 py-4 bg-white/5 rounded-2xl font-black uppercase text-[10px] text-slate-400 hover:bg-white/10 transition-all">Đóng</button>
+            <button onclick="exportAbsentList()" class="flex-1 py-4 bg-emerald-600 rounded-2xl font-black uppercase text-[10px] text-white shadow-lg shadow-emerald-900/30 active:scale-95 transition-all">Tải báo cáo</button>
         </div>
     </div>
 </div>
