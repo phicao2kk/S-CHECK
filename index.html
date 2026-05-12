@@ -1408,25 +1408,49 @@ function checkCode(forced) {
 
         // GIAI ĐOẠN 3: Hoàn tất và hiện Form (Tổng cộng 2 giây) - GIỮ NGUYÊN
         setTimeout(() => {
-            const step2 = document.getElementById('u-step-2');
-            const uTitle = document.getElementById('u-title');
-            const uForm = document.getElementById('u-form');
+        const step2 = document.getElementById('u-step-2');
+        const uTitle = document.getElementById('u-title');
+        const uForm = document.getElementById('u-form');
 
-            if(step2) step2.classList.remove('hidden');
-            if(uTitle) uTitle.innerText = userSession.title;
-            
-            if(uForm) uForm.innerHTML = userSession.fields.map(f => `
-                <div class="space-y-2 mb-5 field-container">
-                    <div class="flex items-center gap-2 ml-4">
-                        <div class="dot-signal bg-indigo-500/50"></div>
-                        <label class="text-[11px] font-black text-indigo-400 uppercase tracking-[2px] transition-all">${f}</label>
+        if(step2) step2.classList.remove('hidden');
+        if(uTitle) uTitle.innerText = userSession.title;
+        
+        // *** SỬA LỖI: KIỂM TRA VÀ HIỂN THỊ ĐỦ CÁC TRƯỜNG ***
+        console.log('userSession.fields:', userSession.fields); // Debug xem có đúng 3 không
+        
+        if(uForm) {
+            if(userSession.fields && userSession.fields.length > 0) {
+                uForm.innerHTML = userSession.fields.map(f => `
+                    <div class="space-y-2 mb-5 field-container">
+                        <div class="flex items-center gap-2 ml-4">
+                            <div class="dot-signal bg-indigo-500/50"></div>
+                            <label class="text-[11px] font-black text-indigo-400 uppercase tracking-[2px] transition-all">${f}</label>
+                        </div>
+                        <input type="text" class="u-input w-full p-5 rounded-[25px] font-bold text-lg bg-white/5 border border-white/5 outline-none transition-all" placeholder="Nhập ${f}...">
+                    </div>`).join('');
+            } else {
+                // Fallback nếu không có fields
+                uForm.innerHTML = `
+                    <div class="space-y-2 mb-5 field-container">
+                        <div class="flex items-center gap-2 ml-4">
+                            <div class="dot-signal bg-indigo-500/50"></div>
+                            <label class="text-[11px] font-black text-indigo-400 uppercase tracking-[2px] transition-all">Họ và Tên</label>
+                        </div>
+                        <input type="text" class="u-input w-full p-5 rounded-[25px] font-bold text-lg bg-white/5 border border-white/5 outline-none transition-all" placeholder="Nhập Họ và Tên...">
                     </div>
-                    <input type="text" class="u-input w-full p-5 rounded-[25px] font-bold text-lg bg-white/5 border border-white/5 outline-none transition-all" placeholder="Nhập ${f}...">
-                </div>`).join('');
-            
-            // Tắt Radar loading
-            hideInitialLoader();
-        }, 2000);
+                    <div class="space-y-2 mb-5 field-container">
+                        <div class="flex items-center gap-2 ml-4">
+                            <div class="dot-signal bg-indigo-500/50"></div>
+                            <label class="text-[11px] font-black text-indigo-400 uppercase tracking-[2px] transition-all">Lớp / Phòng ban</label>
+                        </div>
+                        <input type="text" class="u-input w-full p-5 rounded-[25px] font-bold text-lg bg-white/5 border border-white/5 outline-none transition-all" placeholder="Nhập Lớp / Phòng ban...">
+                    </div>`;
+            }
+        }
+        
+        // Tắt Radar loading
+        hideInitialLoader();
+    }, 2000);
 
     }).catch(error => {
         // --- LOGIC MỚI 3: BẪY LỖI NẾU MẤT MẠNG HOẶC LỖI DATABASE ---
@@ -2152,8 +2176,8 @@ async function restoreSession(code) {
     const snap = await rdb.ref('dynamic_attendance/sessions/' + code).once('value');
     
     if (snap.exists()) {
-
-        currentSession = snap.val();
+        const sessionData = snap.val();
+        currentSession = sessionData;
 
         // HIỆN DÒNG CHỮ NHỎ (Vì đây là xem lại lịch sử)
         document.getElementById('history-label').classList.remove('hidden');
@@ -2165,7 +2189,7 @@ async function restoreSession(code) {
         // 1. Cập nhật lại Tên sự kiện ở cột trái (Tạo sự kiện)
         document.getElementById('a-title').value = currentSession.title;
 
-        // 2. Cập nhật lại danh sách các ô nhập thông tin (Fields)
+        // 2. *** SỬA LỖI: Cập nhật lại danh sách các ô nhập thông tin (Fields) ***
         const fieldsList = document.getElementById('admin-fields-list');
         fieldsList.innerHTML = ""; // Xóa các ô hiện tại
         
@@ -2173,6 +2197,11 @@ async function restoreSession(code) {
             currentSession.fields.forEach(fieldName => {
                 addField(fieldName); // Gọi hàm addField có sẵn để tạo lại các ô input
             });
+        } else {
+            // Fallback nếu không có fields
+            addField("Nhóm");
+            addField("Họ và Tên"); 
+            addField("Lớp / Phòng ban");
         }
 
         // 3. Cập nhật tiêu đề bảng báo cáo
@@ -2195,15 +2224,15 @@ async function restoreSession(code) {
         // 5. Kết nối lại dữ liệu điểm danh thời gian thực
         listenLogs(code);
         
-        // --- PHẦN THÊM MỚI: BIẾN ĐỔI NÚT KÍCH HOẠT THÀNH TẠO MỚI ---
+        // Biến đổi nút kích hoạt thành tạo mới
         const btn = document.getElementById('btn-session-action');
         if (btn) {
             btn.innerText = "Tạo sự kiện mới";
-            btn.onclick = resetEventForm; // Gán hàm reset form bạn đã có
-            btn.style.background = "linear-gradient(135deg, #10b981, #3b82f6)"; // Đổi sang màu xanh lá
+            btn.onclick = resetEventForm;
+            btn.style.background = "linear-gradient(135deg, #10b981, #3b82f6)";
         }
 
-         toggleAdminFormLock(true);
+        toggleAdminFormLock(true);
 
         // Đóng modal lịch sử và thông báo
         closeHistory();
@@ -2223,8 +2252,12 @@ function resetEventForm() {
     // 1. Xóa trắng dữ liệu cũ
     document.getElementById('a-title').value = "";
     document.getElementById('admin-fields-list').innerHTML = "";
+    
+    // *** SỬA LỖI: THÊM ĐÚNG 3 TRƯỜNG (NHÓM, HỌ TÊN, LỚP) ***
+    addField("Nhóm");
     addField("Họ và Tên"); 
     addField("Lớp / Phòng ban");
+    
     document.getElementById('qr-container').classList.add('hidden');
     
     // 2. Ẩn dòng chữ lịch sử và reset tên báo cáo
@@ -3130,23 +3163,23 @@ async function exportAbsentList() {
         return showToast("Chưa có dữ liệu đối soát, vui lòng tải file Excel trước!", "error");
     }
 
-    showToast("Đang tạo báo cáo đối soát (hỗ trợ người lạ)...", "info");
+    showToast("Đang tạo báo cáo đối soát...", "info");
 
     try {
         const snapshot = await rdb.ref('dynamic_attendance/logs/' + currentSession.code).once('value');
         const presentLogs = snapshot.exists() ? Object.values(snapshot.val()) : [];
 
-        // Map normal hóa tên từ danh sách master
-        const masterNormMap = new Map(); // normId -> member object
+        // Map chuẩn hóa tên từ master
+        const masterNormMap = new Map();
         for (let group in allMembersByGroup) {
             for (let member of allMembersByGroup[group]) {
                 masterNormMap.set(member.normalizedId, member);
             }
         }
 
-        // Phân loại những người đã điểm danh: có trong master và không
-        const matchedLogs = [];   // những log có trong master (kèm member)
-        const unmatchedLogs = []; // những log không có trong master
+        // Phân loại người điểm danh
+        const matchedLogs = [];
+        const unmatchedLogs = [];
         for (let log of presentLogs) {
             if (log.values && log.values[0]) {
                 const rawName = log.values[0].toString().trim();
@@ -3159,7 +3192,7 @@ async function exportAbsentList() {
             }
         }
 
-        // Nhóm matchedLogs theo group
+        // Nhóm matched theo group
         const matchedByGroup = {};
         for (let item of matchedLogs) {
             const group = item.member.group;
@@ -3167,7 +3200,7 @@ async function exportAbsentList() {
             matchedByGroup[group].push(item);
         }
 
-        // Nhóm vắng (những người trong master không có trong presentLogs)
+        // Người vắng (trong master nhưng chưa điểm danh)
         const presentNormSet = new Set(matchedLogs.map(x => x.member.normalizedId));
         const absentByGroup = {};
         for (let group in allMembersByGroup) {
@@ -3177,7 +3210,8 @@ async function exportAbsentList() {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('DoiSoatTongHop');
         const fieldCount = currentSession.fields.length;
-        const maxCols = Math.max(fieldCount + 2, fieldCount + 1, 5);
+        const maxCols = 5; // Cố định 5 cột: A B C D E
+        
         let currentRow = 1;
 
         const setCell = (row, col, value, options = {}) => {
@@ -3189,6 +3223,7 @@ async function exportAbsentList() {
             if (options.fill) cell.fill = options.fill;
             return cell;
         };
+        
         const mergeAndSet = (startRow, startCol, endRow, endCol, value, font, align = 'center') => {
             worksheet.mergeCells(startRow, startCol, endRow, endCol);
             const cell = worksheet.getCell(startRow, startCol);
@@ -3197,133 +3232,172 @@ async function exportAbsentList() {
             cell.alignment = { vertical: 'middle', horizontal: align };
         };
 
-        // Dòng 1-3: tiêu đề
+                // Dòng 1-3: Header chính (GIỐNG MẪU)
         mergeAndSet(1, 1, 1, maxCols, "S-CHECK PRO - BÁO CÁO ĐỐI SOÁT TỔNG HỢP", { size: 18, bold: true });
-        mergeAndSet(2, 1, 2, maxCols, `SỰ KIỆN: ${currentSession.title.toUpperCase()}`, { size: 14, bold: true, color: { argb: 'FF334155' } });
-        const totalPresent = presentLogs.length;
+        mergeAndSet(2, 1, 2, maxCols, `SỰ KIỆN: ${currentSession.title.toUpperCase()}`, { size: 14, bold: true });
+        
+        const khongCoTrongDS = unmatchedLogs.length;
+        const coMat = matchedLogs.length;
         let totalAbsent = 0;
         for (let g in absentByGroup) totalAbsent += absentByGroup[g].length;
-        mergeAndSet(3, 1, 3, maxCols, 
-            { richText: [
-                { text: "TRẠNG THÁI: ", font: { name: 'Times New Roman', size: 12, bold: true } },
-                { text: `CÓ MẶT (${totalPresent})`, font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF3F51B5' } } },
-                { text: " - ", font: { name: 'Times New Roman', size: 12, bold: true } },
+        
+        worksheet.mergeCells(3, 1, 3, maxCols);
+        const statusCell = worksheet.getCell(3, 1);
+        statusCell.value = {
+            richText: [
+                { text: "TRẠNG THÁI: ", font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF000000' } } },
+                { text: `KHÔNG CÓ TRONG DS (${khongCoTrongDS})`, font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF7D58F7' } } },
+                { text: " - ", font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF000000' } } },
+                { text: `CÓ MẶT (${coMat})`, font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF3F51B5' } } },
+                { text: " - ", font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF000000' } } },
                 { text: `VẮNG (${totalAbsent})`, font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FFE11D48' } } }
-            ] }, 
-            { size: 12 }, 'center');
+            ]
+        };
+        statusCell.alignment = { vertical: 'middle', horizontal: 'center' };
+        
         currentRow = 5;
 
-        // ========== PHẦN 1: DANH SÁCH THAM GIA ==========
+                // ========== PHẦN 1: THÀNH VIÊN KHÁC (CHỈ HIỆN NẾU CÓ NGƯỜI) ==========
+        if (unmatchedLogs.length > 0) {
+            mergeAndSet(currentRow, 1, currentRow, maxCols, "➤ THÀNH VIÊN KHÁC ĐÃ THAM GIA (KHÔNG CÓ TRONG DANH SÁCH)", { size: 13, bold: true, color: { argb: 'FF7D58F7' } }, 'left');
+            currentRow++;
+            
+            // Có người: hiển thị header + dữ liệu
+            const outsiderHeaders = ["STT", "Dấu thời gian", "Nhóm", "Họ và tên", "Lớp"];
+            for (let c = 0; c < outsiderHeaders.length; c++) {
+                setCell(currentRow, c + 1, outsiderHeaders[c], {
+                    font: { bold: true, color: { argb: 'FFFFFFFF' } },
+                    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7D58F7' } },
+                    align: 'center'
+                });
+            }
+            currentRow++;
+            
+            for (let idx = 0; idx < unmatchedLogs.length; idx++) {
+                const log = unmatchedLogs[idx];
+                const values = log.values || [];
+                // values[0] = Họ và tên, values[1] = Lớp, values[2] = Nhóm
+                const rowData = [idx + 1, log.time, values[2] || "Không xác định", values[0] || "", values[1] || ""];
+                for (let c = 0; c < rowData.length; c++) {
+                    setCell(currentRow, c + 1, rowData[c] !== undefined ? rowData[c] : "", {});
+                }
+                currentRow++;
+            }
+            currentRow++;
+        }
+        // Nếu không có thành viên khác: KHÔNG XUẤT GÌ CẢ, bỏ qua luôn
+        
+                // ========== PHẦN 2: DANH SÁCH THÀNH VIÊN THAM GIA (LUÔN HIỆN MỤC NÀY) ==========
         mergeAndSet(currentRow, 1, currentRow, maxCols, "➤ DANH SÁCH THÀNH VIÊN THAM GIA (ĐÃ ĐIỂM DANH)", { size: 13, bold: true, color: { argb: 'FF3F51B5' } }, 'left');
         currentRow++;
 
         let hasPresentData = false;
-
-        // 1a. Những người có trong master (theo nhóm)
+        
+        // Kiểm tra xem có nhóm nào có người tham gia không
         for (let group in matchedByGroup) {
-            if (matchedByGroup[group].length === 0) continue;
-            hasPresentData = true;
-            mergeAndSet(currentRow, 1, currentRow, maxCols, `📌 ${group.toUpperCase()}`, { size: 12, bold: true, color: { argb: 'FF3F51B5' } }, 'left');
-            currentRow++;
-            const headerCells = ["STT", "Dấu thời gian", ...currentSession.fields];
-            for (let c = 0; c < headerCells.length; c++) {
-                setCell(currentRow, c + 1, headerCells[c], {
-                    font: { bold: true, color: { argb: 'FFFFFFFF' } },
-                    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3F51B5' } },
-                    align: 'center'
-                });
+            if (matchedByGroup[group].length > 0) {
+                hasPresentData = true;
+                break;
             }
-            currentRow++;
-            for (let idx = 0; idx < matchedByGroup[group].length; idx++) {
-                const item = matchedByGroup[group][idx];
-                const log = item.log;
-                const member = item.member;
-                const timeStr = log.time;
-                const values = member.row;
-                const rowData = [idx + 1, timeStr, ...values];
-                for (let c = 0; c < rowData.length; c++) {
-                    setCell(currentRow, c + 1, rowData[c] !== undefined ? rowData[c] : "", {});
+        }
+        
+        if (hasPresentData) {
+            // Có dữ liệu: xuất bình thường theo từng nhóm
+            for (let group in matchedByGroup) {
+                if (matchedByGroup[group].length === 0) continue;
+                
+                mergeAndSet(currentRow, 1, currentRow, maxCols, `📌 ${group.toUpperCase()}`, { size: 12, bold: true, color: { argb: 'FF3F51B5' } }, 'left');
+                currentRow++;
+                
+                // Header: STT | Họ và tên | Lớp
+                const presentHeaders = ["STT", "Họ và tên", "Lớp"];
+                for (let c = 0; c < presentHeaders.length; c++) {
+                    setCell(currentRow, c + 1, presentHeaders[c], {
+                        font: { bold: true, color: { argb: 'FFFFFFFF' } },
+                        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3F51B5' } },
+                        align: 'center'
+                    });
+                }
+                currentRow++;
+                
+                for (let idx = 0; idx < matchedByGroup[group].length; idx++) {
+                    const item = matchedByGroup[group][idx];
+                    const member = item.member;
+                    const values = member.row;
+                    const rowData = [idx + 1, values[0] || "", values[1] || ""];
+                    for (let c = 0; c < rowData.length; c++) {
+                        setCell(currentRow, c + 1, rowData[c] !== undefined ? rowData[c] : "", {});
+                    }
+                    currentRow++;
                 }
                 currentRow++;
             }
+        } else {
+            // Không có dữ liệu: CHỈ HIỆN 1 DÒNG DUY NHẤT, KHÔNG CÓ HEADER
+            mergeAndSet(currentRow, 1, currentRow, maxCols, "📌 CHƯA CÓ THÀNH VIÊN NÀO THAM GIA", { size: 10, bold: true, color: { argb: 'FF3F51B5' } }, 'left');
             currentRow++;
+            // THÊM 1 DÒNG TRỐNG ĐỂ CÁCH VỚI PHẦN TIẾP THEO
+            currentRow++;
+
         }
 
-        // 1b. Những người không có trong master (thành viên lạ)
-        if (unmatchedLogs.length > 0) {
-            hasPresentData = true;
-            mergeAndSet(currentRow, 1, currentRow, maxCols, `📌 THÀNH VIÊN KHÁC (KHÔNG CÓ TRONG DANH SÁCH)`, { size: 12, bold: true, color: { argb: 'FF3F51B5' } }, 'left');
-            currentRow++;
-            const headerCells = ["STT", "Dấu thời gian", ...currentSession.fields];
-            for (let c = 0; c < headerCells.length; c++) {
-                setCell(currentRow, c + 1, headerCells[c], {
-                    font: { bold: true, color: { argb: 'FFFFFFFF' } },
-                    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3F51B5' } },
-                    align: 'center'
-                });
-            }
-            currentRow++;
-            for (let idx = 0; idx < unmatchedLogs.length; idx++) {
-                const log = unmatchedLogs[idx];
-                const timeStr = log.time;
-                const values = log.values || [];
-                const rowData = [idx + 1, timeStr, ...values];
-                for (let c = 0; c < rowData.length; c++) {
-                    setCell(currentRow, c + 1, rowData[c] !== undefined ? rowData[c] : "", {});
-                }
-                currentRow++;
-            }
-            currentRow++;
-        }
-
-        if (!hasPresentData) {
-            mergeAndSet(currentRow, 1, currentRow, maxCols, "Không có dữ liệu tham gia", { size: 11, italic: true }, 'center');
-            currentRow += 2;
-        }
-
-        // ========== PHẦN 2: DANH SÁCH VẮNG (CHỈ NHỮNG NGƯỜI TRONG MASTER) ==========
+                // ========== PHẦN 3: DANH SÁCH VẮNG MẶT ==========
         mergeAndSet(currentRow, 1, currentRow, maxCols, "➤ DANH SÁCH THÀNH VIÊN VẮNG MẶT (CHƯA ĐIỂM DANH)", { size: 13, bold: true, color: { argb: 'FFE11D48' } }, 'left');
         currentRow++;
 
-        let hasAbsent = false;
+        let hasAbsentData = false;
         for (let group in absentByGroup) {
-            if (absentByGroup[group].length === 0) continue;
-            hasAbsent = true;
-            mergeAndSet(currentRow, 1, currentRow, maxCols, `📌 ${group.toUpperCase()}`, { size: 12, bold: true, color: { argb: 'FFE11D48' } }, 'left');
-            currentRow++;
-            const headerCells = ["STT", ...currentSession.fields];
-            for (let c = 0; c < headerCells.length; c++) {
-                setCell(currentRow, c + 1, headerCells[c], {
-                    font: { bold: true, color: { argb: 'FFFFFFFF' } },
-                    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE11D48' } },
-                    align: 'center'
-                });
+            if (absentByGroup[group].length > 0) {
+                hasAbsentData = true;
+                break;
             }
-            currentRow++;
-            for (let idx = 0; idx < absentByGroup[group].length; idx++) {
-                const m = absentByGroup[group][idx];
-                const values = m.row;
-                const rowData = [idx + 1, ...values];
-                for (let c = 0; c < rowData.length; c++) {
-                    setCell(currentRow, c + 1, rowData[c] !== undefined ? rowData[c] : "", {});
+        }
+
+        if (hasAbsentData) {
+            // Có người vắng: xuất bình thường theo từng nhóm
+            for (let group in absentByGroup) {
+                if (absentByGroup[group].length === 0) continue;
+                
+                mergeAndSet(currentRow, 1, currentRow, maxCols, `📌 ${group.toUpperCase()}`, { size: 12, bold: true, color: { argb: 'FFE11D48' } }, 'left');
+                currentRow++;
+                
+                // Header: STT | Họ và tên | Lớp
+                const absentHeaders = ["STT", "Họ và tên", "Lớp"];
+                for (let c = 0; c < absentHeaders.length; c++) {
+                    setCell(currentRow, c + 1, absentHeaders[c], {
+                        font: { bold: true, color: { argb: 'FFFFFFFF' } },
+                        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE11D48' } },
+                        align: 'center'
+                    });
+                }
+                currentRow++;
+                
+                for (let idx = 0; idx < absentByGroup[group].length; idx++) {
+                    const m = absentByGroup[group][idx];
+                    const values = m.row;
+                    const rowData = [idx + 1, values[0] || "", values[1] || ""];
+                    for (let c = 0; c < rowData.length; c++) {
+                        setCell(currentRow, c + 1, rowData[c] !== undefined ? rowData[c] : "", {});
+                    }
+                    currentRow++;
                 }
                 currentRow++;
             }
+        } else {
+            // Không có ai vắng: chỉ hiện 1 dòng thông báo, không có header
+            mergeAndSet(currentRow, 1, currentRow, maxCols, "📌 KHÔNG CÓ THÀNH VIÊN NÀO VẮNG", { size: 10, bold: true, color: { argb: 'FFE11D48' } }, 'left');
             currentRow++;
-        }
-
-        if (!hasAbsent) {
-            mergeAndSet(currentRow, 1, currentRow, maxCols, "Không có thành viên vắng mặt", { size: 11, italic: true }, 'center');
-            currentRow += 2;
         }
 
         // Footer
         mergeAndSet(currentRow, 1, currentRow, maxCols, `Báo cáo được xuất từ hệ thống S-CHECK Pro vào lúc ${new Date().toLocaleString('vi-VN')}`, { size: 10, italic: true, color: { argb: 'FF7F7F7F' } }, 'center');
 
         // Độ rộng cột
-        for (let i = 1; i <= maxCols; i++) {
-            worksheet.getColumn(i).width = i === 1 ? 8 : (i === 2 && maxCols > 2 ? 22 : 24);
-        }
+        worksheet.getColumn(1).width = 8;
+        worksheet.getColumn(2).width = 22;
+        worksheet.getColumn(3).width = 22;
+        worksheet.getColumn(4).width = 22;
+        worksheet.getColumn(5).width = 15;
 
         const buffer = await workbook.xlsx.writeBuffer();
         saveAs(new Blob([buffer]), `Báo Cáo Đối Soát Vắng ${currentSession.title}.xlsx`);
