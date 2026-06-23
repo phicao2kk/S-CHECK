@@ -264,7 +264,6 @@ table th:first-child, table td:first-child {
 }
 
         [v-cloak] { display: none; }
-        #success-overlay { position: fixed !important; inset: 0; z-index: 10000; display: none; align-items: center; justify-content: center; background: rgba(3, 7, 18, 0.95); backdrop-filter: blur(20px); overflow: hidden; }
         #toast-container {
             position: fixed;
             top: 20px;
@@ -721,36 +720,38 @@ input[type="number"] {
     to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-#success-overlay {
-    transition: opacity 0.3s ease;
-    pointer-events: none; /* Mặc định không nhận click */
-}
-#success-overlay[style*="display: flex"] {
-    pointer-events: auto; /* Khi hiển thị thì nhận click */
-}
-
-/* Thêm vào cuối thẻ <style> */
-/* Chặn reload khi bấm nút */
-button[type="button"] {
-    pointer-events: auto;
-}
-
-/* Overlay chiếm toàn màn hình, chặn mọi tương tác */
+/* ===== OVERLAY THÀNH CÔNG - CHẶN MỌI TƯƠNG TÁC ===== */
 #success-overlay {
     position: fixed !important;
     inset: 0 !important;
-    z-index: 10000 !important;
+    z-index: 100000 !important;
     display: none;
     align-items: center;
     justify-content: center;
     background: rgba(3, 7, 18, 0.95);
     backdrop-filter: blur(20px);
-    pointer-events: none;
+    -webkit-backdrop-filter: blur(20px);
     transition: opacity 0.3s ease;
+    pointer-events: none !important;
+    cursor: default !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    touch-action: none !important;
+    -webkit-touch-callout: none !important;
 }
 
-#success-overlay[style*="display: flex"] {
-    pointer-events: auto !important;
+#success-overlay * {
+    pointer-events: none !important;
+    cursor: default !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    touch-action: none !important;
+    -webkit-touch-callout: none !important;
+}
+
+/* VẪN CHO PHÉP CONFETTI HOẠT ĐỘNG */
+#success-overlay canvas {
+    pointer-events: none !important;
 }
 
     </style>
@@ -859,7 +860,9 @@ button[type="button"] {
         </div>
 
         <div class="space-y-1 fix-clipping">
-            <h2 class="text-5xl font-black italic tracking-tighter uppercase leading-none bg-gradient-to-b from-white to-white/30 bg-clip-text text-transparent">HOÀN TẤT</h2>
+            <h2 class="text-5xl font-black italic tracking-tighter uppercase leading-none bg-gradient-to-b from-white to-white/30 bg-clip-text text-transparent">
+                HOÀN THÀNH
+            </h2>
             <p class="text-emerald-400 font-bold tracking-[0.3em] uppercase text-[10px] opacity-90">Điểm danh thành công</p>
         </div>
 
@@ -1613,54 +1616,36 @@ async function submitAttendance(event) {
                 const remainingSeconds = timeState.remainingSeconds || 0;
                 const isRunning = timeState.isRunning || false;
                 const isPaused = timeState.isPaused || false;
+                const totalSeconds = timeState.totalSeconds || 0;
                 
-                console.log("⏱️ Trạng thái:", { isUnlocked, remainingSeconds, isRunning, isPaused });
-                
-                // ===== SỬA LẠI THỨ TỰ KIỂM TRA =====
-                
-                // 1. Nếu đã mở khóa (VÔ HẠN) -> cho phép
                 if (isUnlocked) {
                     console.log("🔓 VÔ HẠN: Cho phép điểm danh");
                 } 
-                // 2. Nếu đang dừng (paused) -> thông báo
                 else if (isPaused) {
-                    showToast("⏸️ HỆ THỐNG ĐANG TẠM DỪNG! Vui lòng liên hệ Admin.", "info");
+                    showToast("⏸️ HỆ THỐNG ĐANG TẠM DỪNG!", "info");
                     if (btn) { btn.disabled = false; btn.innerHTML = 'Xác nhận'; }
                     return;
                 }
-                // 3. Nếu thời gian đã hết (remainingSeconds <= 0 và đang chạy hoặc đã chạy xong)
-                else if (remainingSeconds <= 0 && (isRunning || !isRunning)) {
-                    // Kiểm tra nếu đã từng chạy (có totalSeconds > 0) và đã hết giờ
-                    if (timeState.totalSeconds > 0 && remainingSeconds <= 0) {
-                        showToast("⏰ THỜI GIAN ĐIỂM DANH ĐÃ HẾT! Vui lòng liên hệ Admin để gia hạn hoặc mở khóa.", "error");
-                        if (btn) { btn.disabled = false; btn.innerHTML = 'Xác nhận'; }
-                        return;
-                    }
-                }
-                // 4. Nếu chưa kích hoạt thời gian (chưa chạy, chưa mở khóa)
-                else if (!isRunning && !isUnlocked && remainingSeconds === 0) {
-                    // Đây là trường hợp chưa bấm TÙY CHỈNH
-                    showToast("⏳ ADMIN CHƯA KÍCH HOẠT THỜI GIAN! Vui lòng liên hệ Admin.", "info");
+                else if (totalSeconds > 0 && remainingSeconds <= 0) {
+                    showToast("⏰ THỜI GIAN ĐIỂM DANH ĐÃ HẾT!", "error");
                     if (btn) { btn.disabled = false; btn.innerHTML = 'Xác nhận'; }
                     return;
                 }
-                // 5. Đang chạy và còn thời gian -> cho phép
+                else if (!isRunning && !isUnlocked && totalSeconds === 0) {
+                    showToast("⏳ ADMIN CHƯA KÍCH HOẠT THỜI GIAN!", "info");
+                    if (btn) { btn.disabled = false; btn.innerHTML = 'Xác nhận'; }
+                    return;
+                }
                 else if (isRunning && remainingSeconds > 0) {
                     console.log("⏱️ ĐANG CHẠY: Còn " + remainingSeconds + " giây");
                 }
-                // 6. Các trường hợp khác - cho phép (fallback)
-                else {
-                    console.log("⚠️ Trạng thái không xác định, cho phép điểm danh");
-                }
-            } else {
-                console.log("ℹ️ Không có cấu hình thời gian, cho phép điểm danh tự do");
             }
         } catch (e) {
             console.warn("Lỗi kiểm tra thời gian:", e);
         }
     }
 
-    // === PHẦN CÒN LẠI GIỮ NGUYÊN ===
+    // === LẤY DỮ LIỆU ===
     const vals = Array.from(document.querySelectorAll('.u-input')).map(i => i.value.trim());
     if(vals.some(v => !v)) {
         showToast("Vui lòng điền đủ thông tin!", "info");
@@ -1718,53 +1703,41 @@ async function submitAttendance(event) {
         
         isAttendanceSuccess = true;
         
+        // === HIỂN THỊ OVERLAY THÀNH CÔNG ===
         const overlay = document.getElementById('success-overlay');
         overlay.style.display = 'flex';
-        overlay.style.pointerEvents = 'auto';
+        overlay.style.pointerEvents = 'none'; // CHỈ CHẶN CLICK, KHÔNG CHẶN F5
+        overlay.style.zIndex = '100000';
+        overlay.style.cursor = 'default';
         
+        // Bắn confetti
         confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         
+        // === ẨN TOÀN BỘ FORM ===
+        const step2 = document.getElementById('u-step-2');
+        if (step2) {
+            step2.style.display = 'none';
+        }
+        
+        // === VÔ HIỆU HÓA NÚT ===
         if (btn) {
             btn.style.display = 'none';
         }
         
-        document.querySelectorAll('.u-input').forEach(input => {
-            input.disabled = true;
-            input.style.opacity = '0.5';
-        });
+        // === CHỈ CHẶN CLICK TRÊN OVERLAY, KHÔNG CHẶN F5 ===
+        overlay.onclick = null;
+        overlay.onmousedown = null;
+        overlay.onmouseup = null;
+        overlay.ontouchstart = null;
+        overlay.ontouchend = null;
         
-        const step2 = document.getElementById('u-step-2');
-        if (step2) {
-            const uTitle = document.getElementById('u-title');
-            if (uTitle) uTitle.innerText = '✅ ĐÃ ĐIỂM DANH';
-            
-            const uForm = document.getElementById('u-form');
-            if (uForm) {
-                uForm.innerHTML = `
-                    <div class="text-center py-8">
-                        <div class="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/30">
-                            <i class="fa-solid fa-check text-white text-3xl"></i>
-                        </div>
-                        <p class="text-slate-300 text-base font-medium">Đã điểm danh thành công!</p>
-                        <p class="text-slate-500 text-sm mt-2">Thông tin đã được ghi nhận</p>
-                    </div>
-                `;
-            }
-        }
+        // === KHÔNG CHẶN PHÍM TẮT ===
+        // Người dùng vẫn có thể F5, Ctrl+R để reload
         
-        setTimeout(() => {
-            if (overlay.style.display === 'flex') {
-                overlay.style.display = 'none';
-            }
-        }, 5000);
+        // === CHỈ CHẶN CUỘN TRANG ===
+        document.body.style.overflow = 'hidden';
         
-        overlay.onclick = function(e) {
-            if (e.target === this) {
-                this.style.display = 'none';
-            }
-        };
-        
-        console.log("✅ Điểm danh thành công!");
+        console.log("✅ Điểm danh thành công! Chỉ chặn click, không chặn reload.");
         
     } catch (e) {
         showToast("Lỗi hệ thống: Không thể gửi dữ liệu!", "error");
@@ -1774,10 +1747,9 @@ async function submitAttendance(event) {
             btn.innerHTML = 'Xác nhận';
             btn.style.display = 'block';
         }
-        document.querySelectorAll('.u-input').forEach(input => {
-            input.disabled = false;
-            input.style.opacity = '1';
-        });
+        const step2 = document.getElementById('u-step-2');
+        if (step2) step2.style.display = 'block';
+        document.body.style.overflow = 'auto';
     }
 }
 
@@ -1858,23 +1830,20 @@ function handleLogout() {
 function checkCode(forced) {
     if(!forced) return; 
     
-        // === THÊM VÀO ĐẦU HÀM ===
+    // === NẾU ĐÃ ĐIỂM DANH, HIỂN THỊ OVERLAY ===
     if (isAttendanceSuccess) {
-        // Hiển thị thông báo đã điểm danh
-        const viewUser = document.getElementById('view-user');
-        viewUser.innerHTML = `
-            <div class="glass p-10 rounded-3xl text-center max-w-md mx-auto">
-                <div class="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/30">
-                    <i class="fa-solid fa-check text-white text-3xl"></i>
-                </div>
-                <h2 class="text-2xl font-black text-emerald-400">✅ ĐÃ ĐIỂM DANH</h2>
-                <p class="text-slate-400 text-sm mt-2">Bạn đã điểm danh thành công!</p>
-                <button onclick="location.reload()" class="mt-6 px-6 py-3 bg-white/10 rounded-xl text-white font-bold hover:bg-white/20 transition-all">
-                    🔄 Tải lại
-                </button>
-            </div>
-        `;
-        viewUser.classList.remove('hidden');
+        const overlay = document.getElementById('success-overlay');
+        if (overlay && overlay.style.display !== 'flex') {
+            overlay.style.display = 'flex';
+            overlay.style.pointerEvents = 'none';
+            overlay.style.cursor = 'default';
+            overlay.onclick = null;
+        }
+        const step2 = document.getElementById('u-step-2');
+        if (step2) step2.style.display = 'none';
+        
+        // Chỉ chặn cuộn trang, không chặn F5
+        document.body.style.overflow = 'hidden';
         return;
     }
     
@@ -1906,11 +1875,9 @@ function checkCode(forced) {
             return;
         }
         
-        // LẤY DỮ LIỆU SESSION
         userSession = snap.val();
 
-        // === QUAN TRỌNG: LẮNG NGHE THAY ĐỔI THỜI GIAN TỪ FIREBASE ===
-        // Lắng nghe liên tục để cập nhật userSession.timeLimit
+        // Lắng nghe thời gian
         rdb.ref('dynamic_attendance/sessions/' + roomCode + '/timeLimit').on('value', timeSnap => {
             if (timeSnap.exists()) {
                 const timeState = timeSnap.val();
@@ -1921,7 +1888,6 @@ function checkCode(forced) {
                 console.log("🔄 Không có cấu hình thời gian");
             }
         });
-        // ============================================================
         
         setTimeout(() => {
             if(loaderText) loaderText.innerHTML = `<span class="text-emerald-400 font-bold">ĐÃ KẾT NỐI TÍN HIỆU...</span>`;
