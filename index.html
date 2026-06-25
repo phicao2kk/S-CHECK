@@ -83,6 +83,7 @@ input {
     background: radial-gradient(circle, rgba(153, 27, 27, 0.6) 0%, rgba(3, 7, 18, 0.98) 100%) !important;
     backdrop-filter: blur(25px) grayscale(1) !important;
     display: flex !important;
+    z-index: 99999 !important;
 }
 
 /* Hiệu ứng click chung cho tất cả các nút */
@@ -765,6 +766,174 @@ input[type="number"] {
     transform: translateY(-2px) !important;
 }
 
+        /* Thêm style cho nút "Dữ liệu gian lận" */
+        .btn-fraud-data {
+            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.2) !important;
+            transition: all 0.3s ease;
+        }
+        .btn-fraud-data:hover {
+            box-shadow: 0 0 50px rgba(239, 68, 68, 0.4) !important;
+            transform: translateY(-2px) !important;
+        }
+        .btn-fraud-data:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Style cho bảng dữ liệu gian lận */
+        .fraud-table-container {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        .fraud-table-container::-webkit-scrollbar {
+            width: 4px;
+        }
+        .fraud-table-container::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 10px;
+        }
+
+        .distance-tag {
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 800;
+            display: inline-block;
+            letter-spacing: 0.5px;
+        }
+        .distance-tag.near {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .distance-tag.far {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        .distance-tag.very-far {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        .distance-tag.unknown {
+            background: rgba(100, 116, 139, 0.15);
+            color: #94a3b8;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+        }
+
+        /* Animation cho modal */
+        @keyframes fraudSlideIn {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .fraud-modal-enter {
+            animation: fraudSlideIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+        }
+
+        .text-success { color: #10b981; }
+        .text-warning { color: #f59e0b; }
+        .text-danger { color: #ef4444; }
+
+        /* Thay đổi z-index của confirm-modal từ 11000 lên 99999 */
+#confirm-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 99999 !important; /* Tăng lên cao nhất */
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+/* === CỘT XÓA TRONG BẢNG GIAN LẬN - RỘNG RÃI === */
+#fraud-table-body td:first-child {
+    width: 50px !important;
+    min-width: 50px !important;
+    max-width: 50px !important;
+    padding: 6px 4px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+/* Nút xóa - KÍCH THƯỚC VỪA PHẢI, DỄ BẤM */
+.fraud-delete-btn {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    max-width: 32px !important;
+    max-height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+    background: rgba(239, 68, 68, 0.1) !important;
+    border: 1.5px solid rgba(239, 68, 68, 0.2) !important;
+    color: #ef4444 !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+    opacity: 1 !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    line-height: 1 !important;
+}
+
+.fraud-delete-btn:hover {
+    background: rgba(239, 68, 68, 0.25) !important;
+    border-color: rgba(239, 68, 68, 0.5) !important;
+    transform: scale(1.1) !important;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.2) !important;
+}
+
+.fraud-delete-btn:active {
+    transform: scale(0.85) !important;
+    background: #ef4444 !important;
+    color: white !important;
+}
+
+/* Các ô dữ liệu - padding thoải mái */
+#fraud-table-body td {
+    padding: 10px 14px !important;
+    vertical-align: middle !important;
+    font-size: 13px !important;
+}
+
+/* Cột STT */
+#fraud-table-body td:nth-child(2) {
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    padding: 10px 4px !important;
+    text-align: center !important;
+}
+
+/* Header */
+#fraud-data-modal thead th {
+    padding: 10px 14px !important;
+    font-size: 10px !important;
+}
+
+#fraud-data-modal thead th:first-child {
+    width: 50px !important;
+    min-width: 50px !important;
+    max-width: 50px !important;
+    padding: 10px 4px !important;
+    text-align: center !important;
+}
+
+#fraud-data-modal thead th:nth-child(2) {
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    padding: 10px 4px !important;
+    text-align: center !important;
+}
+
     </style>
 </head>
 <body>
@@ -815,7 +984,7 @@ input[type="number"] {
             <i class="fa-solid fa-spinner animate-spin"></i>
             <span class="text-[10px] font-black uppercase">Chờ tín hiệu từ điện thoại...</span>
         </div>
-        <button onclick="closeAnchorModal()" class="w-full py-3 text-[10px] font-black text-slate-500 uppercase">Hủy bỏ</button>
+        <button onclick="closeAnchorModal()" class="w-full py-3 rounded-2xl text-[10px] font-black text-slate-500 hover:text-white hover:bg-white/10 border border-white/10 transition-all uppercase">Hủy bỏ</button>
     </div>
 </div>
 
@@ -1040,11 +1209,11 @@ input[type="number"] {
                 </button>
 
                 <!-- KHU VỰC GPS (Nằm gọn bên trong Card chính) -->
-                <div class="pt-6 border-t border-white/5 space-y-4">
+                <div class="pt-6 border-t border-white/5 space-y-4" id="gps-section">
                     <div class="flex items-center justify-between">
                         <div class="flex flex-col">
                             <span class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Bảo mật GPS</span>
-                            <span class="text-[8px] text-slate-500 uppercase font-bold mt-0.5">Chống điểm danh từ xa</span>
+                            <span class="text-[8px] text-slate-500 uppercase font-bold mt-0.5">Chống gian lận điểm danh từ xa</span>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="a-require-location" class="sr-only peer" onchange="handleGpsToggle()">
@@ -1054,11 +1223,31 @@ input[type="number"] {
 
                     <!-- Cấu hình bán kính -->
                     <div id="radius-setting-container" class="flex items-center justify-between gap-3 opacity-50 transition-all duration-500">
-                        <span class="text-[9px] font-bold text-slate-500 uppercase">Bán kính (m):</span>
+                        <span class="text-[9px] font-bold text-slate-100 uppercase">Bán kính (m):</span>
                         <div class="flex items-center gap-2">
-                            <input type="number" id="a-location-radius" value="50" min="50" onblur="saveRadiusSettings()" onkeydown="if(event.key === 'Enter') saveRadiusSettings()" class="w-16 p-2 text-center rounded-xl bg-black/40 border border-white/10 text-[11px] font-black text-indigo-400 outline-none focus:border-indigo-500/50">
-                            <button onclick="saveRadiusSettings()" class="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white text-[9px] font-black px-3 py-2 rounded-xl border border-indigo-500/30 transition-all">LƯU</button>
+                            <input type="number" id="a-location-radius" value="50" min="50" 
+                                onchange="queueSaveRadius()"
+                                onkeydown="if(event.key === 'Enter') { event.preventDefault(); queueSaveRadius(); }"
+                                class="w-16 p-2 text-center rounded-xl bg-black/40 border border-white/10 text-[11px] font-black text-indigo-400 outline-none focus:border-indigo-500/50">
+                            <button onclick="queueSaveRadius()" class="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white text-[9px] font-black px-3 py-2 rounded-xl border border-indigo-500/30 transition-all">LƯU</button>
                         </div>
+                    </div>
+
+                    <!-- NÚT DỮ LIỆU GIAN LẬN - CHỈ HIỆN KHI BẬT GPS -->
+                    <div id="fraud-btn-container" class="hidden pt-2">
+                        <div class="flex gap-2">
+                            <button onclick="openFraudModal()" 
+                                    class="btn-fraud-data flex-1 py-3 rounded-2xl text-white font-black uppercase text-xs tracking-[2px] shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-shield-halved"></i> DỮ LIỆU GIAN LẬN
+                                <span id="fraud-badge" class="bg-red-500/30 text-red-400 text-[8px] px-2 py-0.5 rounded-full">0</span>
+                            </button>
+                            <button onclick="reloadFraudData()" 
+                                    class="px-4 py-3 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-[10px] font-black uppercase hover:bg-indigo-500 hover:text-white transition-all active:scale-95"
+                                    title="Tải lại dữ liệu gian lận từ Firebase">
+                                <i class="fa-solid fa-rotate"></i>
+                            </button>
+                        </div>
+                        <p class="text-[7px] text-slate-500 text-center mt-1 uppercase tracking-[1px]">Danh sách các trường hợp điểm danh từ xa bị từ chối</p>
                     </div>
                 </div>
                 
@@ -1073,7 +1262,7 @@ input[type="number"] {
                             <span class="text-[8px] text-slate-500 uppercase font-bold mt-0.5">Tự động khóa điểm danh sau thời gian đặt</span>
                         </div>
                         <div id="time-status-badge" class="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-wider bg-slate-800/50 text-slate-500 border border-white/5">
-                            <i class="fa-regular fa-circle mr-1"></i> TẮT
+                            <i class="fa-regular fa-circle mr-1"></i> CHƯA HOẠT ĐỘNG
                         </div>
                     </div>
 
@@ -1494,13 +1683,12 @@ async function activateSession() {
             locationRadius: pendingRadius,
             ts: Date.now(),
             ownerId: user.uid,
-            // === THÊM TRẠNG THÁI THỜI GIAN MẶC ĐỊNH: VÔ HẠN ===
             timeLimit: {
                 remainingSeconds: 0,
                 totalSeconds: 0,
                 isRunning: false,
                 isPaused: false,
-                isUnlocked: true,  // Mặc định MỞ KHÓA (VÔ HẠN)
+                isUnlocked: true,
                 startTime: null,
                 pausedAt: null,
                 updatedAt: Date.now()
@@ -1513,21 +1701,26 @@ async function activateSession() {
             sessionData.allowMultiple = false;
         }
 
-        // Ghi dữ liệu Session
         await rdb.ref('dynamic_attendance/sessions/' + code).set(sessionData);
-        
-        // Ghi vào lịch sử cá nhân của Admin
         await rdb.ref('dynamic_attendance/users/' + user.uid + '/my_sessions/' + code).set(true);
 
         currentSession = sessionData;
-        
-        // Lưu code vào biến timeLimit
         timeLimit.code = code;
         
-        // RESET TRẠNG THÁI THỜI GIAN KHI TẠO SỰ KIỆN MỚI
         resetTimeLimitState();
-        timeLimit.isUnlocked = true;  // Đảm bảo là VÔ HẠN
+        timeLimit.isUnlocked = true;
         updateTimeUI();
+
+        // === RESET DỮ LIỆU GIAN LẬN KHI TẠO SESSION MỚI ===
+        fraudData = [];
+        try {
+            localStorage.setItem('scheck_fraud_data', JSON.stringify(fraudData));
+        } catch (e) {}
+        updateFraudBadge();
+        updateFraudUI();
+
+        // === LẮNG NGHE GIAN LẬN CHO SESSION MỚI ===
+        setupFraudListener(code);
 
         // LOGIC HIỆN QR MỎ NEO NẾU DÙNG PC + BẬT GPS
         if (isGpsRequired && adminDeviceType === 'pc') {
@@ -1593,7 +1786,16 @@ function finishActivation(code, title) {
 // 2. GỬI ĐIỂM DANH
 // SỬA HÀM submitAttendance() - THÊM PHẦN KIỂM TRA THỜI GIAN TỪ FIREBASE
 
+// === THÊM BIẾN NÀY VÀO ĐẦU FILE (sau các biến toàn cục khác) ===
+let isProcessing = false;
+// === HÀM submitAttendance CHÍNH (CHỈ 1 LẦN DUY NHẤT) ===
 async function submitAttendance(event) {
+    // Chặn gọi trùng
+    if (isProcessing) {
+        console.log("⏳ Đang xử lý, bỏ qua lần gọi trùng");
+        return;
+    }
+    
     if (isAttendanceSuccess) {
         console.log("✅ Đã điểm danh, bỏ qua");
         return;
@@ -1605,9 +1807,12 @@ async function submitAttendance(event) {
         event.stopImmediatePropagation();
     }
     
+    isProcessing = true;
+    
     const overlay = document.getElementById('success-overlay');
     if (overlay && overlay.style.display === 'flex') {
         console.log("✅ Đã điểm danh thành công, bỏ qua");
+        isProcessing = false;
         return;
     }
     
@@ -1617,61 +1822,22 @@ async function submitAttendance(event) {
         btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin mr-2"></i> ĐANG XỬ LÝ...';
     }
     
-    // === KIỂM TRA GIỚI HẠN THỜI GIAN ===
-    if (userSession && userSession.code) {
-        try {
-            const timeSnap = await rdb.ref('dynamic_attendance/sessions/' + userSession.code + '/timeLimit').once('value');
-            
-            let timeState = null;
-            if (timeSnap.exists()) {
-                timeState = timeSnap.val();
-                userSession.timeLimit = timeState;
-            }
-            
-            if (timeState) {
-                const isUnlocked = timeState.isUnlocked || false;
-                const remainingSeconds = timeState.remainingSeconds || 0;
-                const isRunning = timeState.isRunning || false;
-                const isPaused = timeState.isPaused || false;
-                const totalSeconds = timeState.totalSeconds || 0;
-                
-                if (isUnlocked) {
-                    console.log("🔓 VÔ HẠN: Cho phép điểm danh");
-                } 
-                else if (isPaused) {
-                    showToast("⏸️ HỆ THỐNG ĐANG TẠM DỪNG!", "info");
-                    if (btn) { btn.disabled = false; btn.innerHTML = 'Xác nhận'; }
-                    return;
-                }
-                else if (totalSeconds > 0 && remainingSeconds <= 0) {
-                    showToast("⏰ THỜI GIAN ĐIỂM DANH ĐÃ HẾT!", "error");
-                    if (btn) { btn.disabled = false; btn.innerHTML = 'Xác nhận'; }
-                    return;
-                }
-                else if (!isRunning && !isUnlocked && totalSeconds === 0) {
-                    showToast("⏳ ADMIN CHƯA KÍCH HOẠT THỜI GIAN!", "info");
-                    if (btn) { btn.disabled = false; btn.innerHTML = 'Xác nhận'; }
-                    return;
-                }
-                else if (isRunning && remainingSeconds > 0) {
-                    console.log("⏱️ ĐANG CHẠY: Còn " + remainingSeconds + " giây");
-                }
-            }
-        } catch (e) {
-            console.warn("Lỗi kiểm tra thời gian:", e);
-        }
-    }
-
+    // ⭐ ĐỊNH NGHĨA fraudTime NGAY TỪ ĐẦU
+    const fraudTime = new Date().toLocaleString('vi-VN');
+    
     // === LẤY DỮ LIỆU ===
     const vals = Array.from(document.querySelectorAll('.u-input')).map(i => i.value.trim());
     if(vals.some(v => !v)) {
         showToast("Vui lòng điền đủ thông tin!", "info");
         if (btn) { btn.disabled = false; btn.innerHTML = 'Xác nhận'; }
+        isProcessing = false;
         return;
     }
     
     const deviceId = getUniqueDeviceId(); 
+    const userName = vals[0] || document.querySelector('.u-input')?.value || 'Không xác định';
 
+    // === KIỂM TRA ĐÃ ĐIỂM DANH CHƯA ===
     if (!userSession.allowMultiple) {
         try {
             const checkRef = rdb.ref('dynamic_attendance/logs/' + userSession.code);
@@ -1679,11 +1845,16 @@ async function submitAttendance(event) {
             if (snapshot.exists()) {
                 showToast("BẠN ĐÃ ĐIỂM DANH RỒI!", "error");
                 if (btn) { btn.disabled = false; btn.innerHTML = 'Xác nhận'; }
+                isProcessing = false;
                 return;
             }
         } catch (e) { console.error(e); }
     }
 
+    // ⭐ === PHÁT HIỆN GIAN LẬN ===
+    let isFraud = false;
+    let fraudDistance = 0;
+    
     if (userSession && userSession.requireLocation === true) {
         try {
             const pos = await new Promise((res, rej) => 
@@ -1696,65 +1867,69 @@ async function submitAttendance(event) {
                     userSession.adminLocation.lat, userSession.adminLocation.lng
                 );
                 const allowedRadius = Number(userSession.locationRadius) || 50;
+                
+                console.log("📍 Khoảng cách:", dist, "m, Bán kính:", allowedRadius, "m");
+                
                 if (dist > allowedRadius) {
-                    showToast(`Cách xa ${dist.toFixed(0)}m!`, "error");
-                    if (btn) { btn.disabled = false; btn.innerHTML = 'Xác nhận'; }
-                    return;
+                    isFraud = true;
+                    fraudDistance = dist;
                 }
             }
         } catch (e) {
             showToast(getGpsErrorMessage(e), "error");
             if (btn) { btn.disabled = false; btn.innerHTML = 'Xác nhận'; }
+            isProcessing = false;
             return;
         }
     }
 
-    const time = new Date().toLocaleString('vi-VN');
+    // ⭐ === NẾU GIAN LẬN: GHI 1 LẦN DUY NHẤT ===
+    if (isFraud) {
+        const allowedRadius = Number(userSession.locationRadius) || 50;
+        
+        console.log("🚨 PHÁT HIỆN GIAN LẬN:", userName, "-", Math.round(fraudDistance), "m");
+        
+        // 📝 GHI NHẬN GIAN LẬN
+        await addFraudRecordFromUser(userName, fraudDistance, fraudTime, userSession.code, `Ngoài bán kính ${allowedRadius}m`);
+        
+        // ✅ CHỈ HIỂN THỊ 1 THÔNG BÁO CHO USER
+        showToast(`⚠️ Bạn đang ở ngoài khu vực cho phép (${Math.round(fraudDistance)}m)`, "error");
+        
+        if (btn) { 
+            btn.disabled = false; 
+            btn.innerHTML = 'Xác nhận'; 
+        }
+        isProcessing = false;
+        return;
+    }
+
+    // ✅ ĐIỂM DANH THÀNH CÔNG
     try {
         await rdb.ref('dynamic_attendance/logs/' + userSession.code).push({ 
             values: vals, 
-            time: time, 
+            time: fraudTime, 
             ts: Date.now(),
             deviceId: deviceId
         });
         
         isAttendanceSuccess = true;
         
-        // === HIỂN THỊ OVERLAY THÀNH CÔNG ===
         const overlay = document.getElementById('success-overlay');
         overlay.style.display = 'flex';
-        overlay.style.pointerEvents = 'none'; // CHỈ CHẶN CLICK, KHÔNG CHẶN F5
+        overlay.style.pointerEvents = 'none';
         overlay.style.zIndex = '100000';
         overlay.style.cursor = 'default';
         
-        // Bắn confetti
         confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         
-        // === ẨN TOÀN BỘ FORM ===
         const step2 = document.getElementById('u-step-2');
-        if (step2) {
-            step2.style.display = 'none';
-        }
+        if (step2) { step2.style.display = 'none'; }
         
-        // === VÔ HIỆU HÓA NÚT ===
-        if (btn) {
-            btn.style.display = 'none';
-        }
+        if (btn) { btn.style.display = 'none'; }
         
-        // === CHỈ CHẶN CLICK TRÊN OVERLAY, KHÔNG CHẶN F5 ===
-        overlay.onclick = null;
-        overlay.onmousedown = null;
-        overlay.onmouseup = null;
-        overlay.ontouchstart = null;
-        overlay.ontouchend = null;
-        
-        // === KHÔNG CHẶN PHÍM TẮT ===
-        // Người dùng vẫn có thể F5, Ctrl+R để reload
-        
-        // === CHỈ CHẶN CUỘN TRANG ===
         document.body.style.overflow = 'hidden';
         
-        console.log("✅ Điểm danh thành công! Chỉ chặn click, không chặn reload.");
+        console.log("✅ Điểm danh thành công!");
         
     } catch (e) {
         showToast("Lỗi hệ thống: Không thể gửi dữ liệu!", "error");
@@ -1768,6 +1943,79 @@ async function submitAttendance(event) {
         if (step2) step2.style.display = 'block';
         document.body.style.overflow = 'auto';
     }
+    
+    isProcessing = false;
+}
+
+// ⚠️ KHÔNG CẦN GHI ĐÈ LẠI Ở CUỐI FILE NỮA
+// Xóa bỏ phần window.submitAttendance = async function(event) {...}
+
+// === THÊM DỮ LIỆU GIAN LẬN TỪ NGƯỜI DÙNG (KHÔNG CẦN currentSession) ===
+async function addFraudRecordFromUser(name, distance, time, sessionCode, reason = 'Ngoài bán kính') {
+    // 🔥 CHỐNG TRÙNG LẶP
+    const now = Date.now();
+    
+    // Kiểm tra với lastFraudRecord
+    if (lastFraudRecord && 
+        lastFraudRecord.name === name && 
+        Math.abs(lastFraudRecord.distance - Math.round(distance)) < 10 &&
+        (now - lastFraudTime) < 3000) {
+        console.log("⏭️ BỎ QUA TRÙNG LẶP (3s):", name);
+        return;
+    }
+    
+    // Kiểm tra trong fraudData
+    const recentFraud = fraudData.filter(r => {
+        const timeDiff = now - r.timestamp;
+        return r.name === name && 
+               Math.abs(r.distance - Math.round(distance)) < 10 && 
+               timeDiff < 5000;
+    });
+    
+    if (recentFraud.length > 0) {
+        console.log("⏭️ BỎ QUA TRÙNG LẶP (5s):", name);
+        return;
+    }
+    
+    const record = {
+        id: Date.now() + Math.random().toString(36).substr(2, 5),
+        name: name || 'Không xác định',
+        distance: Math.round(distance),
+        time: time || new Date().toLocaleString('vi-VN'),
+        reason: reason,
+        timestamp: now
+    };
+    
+    // Lưu vết để chống trùng
+    lastFraudRecord = record;
+    lastFraudTime = now;
+    
+    console.log("📝 GHI NHẬN GIAN LẬN:", record);
+    
+    // Lưu local
+    fraudData.unshift(record);
+    if (fraudData.length > 1000) {
+        fraudData = fraudData.slice(0, 1000);
+    }
+    try {
+        localStorage.setItem('scheck_fraud_data', JSON.stringify(fraudData));
+    } catch (e) {}
+    
+    updateFraudBadge();
+    
+    // 📤 LƯU LÊN FIREBASE
+    if (sessionCode) {
+        const fraudRef = rdb.ref('fraud/' + sessionCode);
+        try {
+            await fraudRef.push(record);
+            console.log("✅ Đã lưu lên Firebase:", record);
+        } catch (err) {
+            console.error("❌ LỖI LƯU FIREBASE:", err);
+        }
+    }
+    
+    // ❌ KHÔNG HIỂN THỊ THÔNG BÁO CHO USER
+    // Chỉ admin mới nhận thông báo qua listener
 }
 
 // 3. MỞ TRANG TÍNH (MỞ LINK TRỰC TIẾP)
@@ -1831,6 +2079,19 @@ function checkAuthState() {
                 addField("Họ và Tên"); 
                 addField("Lớp / Phòng ban");
             }
+            
+            // === LOAD DỮ LIỆU GIAN LẬN TỪ LOCALSTORAGE ===
+            loadFraudData();
+            
+            // === QUAN TRỌNG: NẾU CÓ SESSION ĐANG HOẠT ĐỘNG, LOAD TỪ FIREBASE ===
+            if (currentSession && currentSession.code) {
+                console.log("🔄 Đang tải dữ liệu gian lận từ Firebase cho session:", currentSession.code);
+                loadFraudDataForSession(currentSession.code);
+                setupFraudListener(currentSession.code);
+            } else {
+                console.log("⚠️ Chưa có session, chờ khôi phục hoặc tạo mới");
+            }
+            
         } else {
             showView('auth');
             if (nav) nav.innerHTML = ""; 
@@ -1970,7 +2231,11 @@ function listenLogs(code) {
 
     rdb.ref(logsPath).off(); 
 
+    // 🔔 LẮNG NGHE ĐIỂM DANH BÌNH THƯỜNG
     setupRealtimeNotify(code);
+    
+    // 🚨 LẮNG NGHE GIAN LẬN
+    setupFraudListener(code);
 
     rdb.ref(logsPath).on('value', snap => {
         const body = document.getElementById('table-body');
@@ -2204,9 +2469,9 @@ function addField(val = "") {
     
     div.innerHTML = `
         <div class="dot-signal shrink-0 ml-1"></div>
-        <input type="text" class="field-input flex-1 p-3 rounded-xl text-[13px] font-bold outline-none transition-all" 
+        <input type="text" class="field-input flex-1 p-3 rounded-xl text-[13px] font-bold outline-none transition-all placeholder:text-[11px] placeholder:font-normal placeholder:text-slate-500" 
                value="${val}" 
-               placeholder="Ví dụ: Số điện thoại, Email...">
+               placeholder="Nhập tên thông tin bạn cần thu thập...">
         <button onclick="this.parentElement.remove()" class="text-slate-600 hover:text-red-500 transition-colors px-2">
             <i class="fa-solid fa-circle-xmark"></i>
         </button>
@@ -2264,6 +2529,7 @@ function showConfirm(msg, callback) {
     msgEl.innerText = msg;
     modal.classList.remove('hidden');
     modal.classList.add('backdrop-panic');
+    modal.style.zIndex = '99999'; // Đảm bảo z-index cao nhất
     
     content.classList.remove('modal-urgent');
     void content.offsetWidth; 
@@ -2348,14 +2614,62 @@ document.getElementById('confirm-btn-yes').onclick = async function() {
         const oldText = this.innerText;
         this.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> ĐANG XÓA...';
         
-        await confirmCallback(); 
-        
-        closeConfirm(true);
-        
-        this.disabled = false;
-        this.innerText = oldText;
+        try {
+            await confirmCallback();
+            closeConfirm(true);
+        } catch (e) {
+            console.error("Lỗi khi thực thi callback:", e);
+            showToast("Lỗi xóa dữ liệu!", "error");
+            closeConfirm(false);
+        } finally {
+            this.disabled = false;
+            this.innerText = oldText;
+        }
     }
 };
+
+// === XÓA DỮ LIỆU GIAN LẬN VỚI CONFIRM ===
+function clearFraudData() {
+    if (fraudData.length === 0) {
+        return showToast("Không có dữ liệu để xóa!", "info");
+    }
+    
+    // Sử dụng showConfirm để hiển thị modal xác nhận
+    showConfirm("XÁC NHẬN: Bạn muốn xóa toàn bộ dữ liệu gian lận? Hành động này không thể hoàn tác!", async () => {
+        try {
+            showToast("Đang xóa dữ liệu gian lận...", "info");
+            
+            // Xóa trên Firebase
+            if (currentSession && currentSession.code) {
+                await rdb.ref('fraud/' + currentSession.code).remove();
+            }
+            
+            // Xóa local
+            fraudData = [];
+            try {
+                localStorage.removeItem('scheck_fraud_data');
+            } catch (e) {}
+            
+            // Cập nhật UI
+            renderFraudTable();
+            updateFraudStats();
+            updateFraudBadge();
+            
+            showToast("Đã xóa toàn bộ dữ liệu gian lận!", "success");
+        } catch (err) {
+            console.warn("Không thể xóa gian lận trên Firebase:", err);
+            // Vẫn xóa local nếu lỗi Firebase
+            fraudData = [];
+            try {
+                localStorage.removeItem('scheck_fraud_data');
+            } catch (e) {}
+            renderFraudTable();
+            updateFraudStats();
+            updateFraudBadge();
+            showToast("Đã xóa dữ liệu gian lận (local) !", "warning");
+        }
+    });
+}
 
 function closeConfirm(res) {
     const modal = document.getElementById('confirm-modal');
@@ -2658,6 +2972,51 @@ async function restoreSession(code) {
 
         toggleAdminFormLock(true);
 
+        // === KHÔI PHỤC CẤU HÌNH GPS ===
+        const gpsToggle = document.getElementById('a-require-location');
+        const radiusContainer = document.getElementById('radius-setting-container');
+        const fraudBtnContainer = document.getElementById('fraud-btn-container');
+        
+        if (gpsToggle) {
+            // Khôi phục trạng thái GPS
+            gpsToggle.checked = currentSession.requireLocation || false;
+            
+            // Cập nhật bán kính
+            const radiusInput = document.getElementById('a-location-radius');
+            if (radiusInput && currentSession.locationRadius) {
+                radiusInput.value = currentSession.locationRadius;
+            }
+            
+            // HIỆN/ẨN NÚT DỮ LIỆU GIAN LẬN
+            if (fraudBtnContainer) {
+                if (currentSession.requireLocation) {
+                    fraudBtnContainer.classList.remove('hidden');
+                    fraudBtnContainer.classList.add('animate-in', 'fade-in', 'duration-300');
+                } else {
+                    fraudBtnContainer.classList.add('hidden');
+                    fraudBtnContainer.classList.remove('animate-in', 'fade-in', 'duration-300');
+                }
+            }
+            
+            // Cập nhật bán kính container
+            if (radiusContainer) {
+                if (currentSession.requireLocation) {
+                    radiusContainer.style.opacity = "1";
+                    radiusContainer.style.pointerEvents = "auto";
+                } else {
+                    radiusContainer.style.opacity = "0.5";
+                    radiusContainer.style.pointerEvents = "none";
+                }
+            }
+        }
+
+        // === KHÔI PHỤC DỮ LIỆU GIAN LẬN ===
+        // Load dữ liệu gian lận từ Firebase
+        loadFraudDataForSession(code);
+        
+        // Lắng nghe gian lận real-time
+        setupFraudListener(code);
+
         // Reset trạng thái thời gian khi khôi phục phiên
         resetTimeLimitState();
         updateTimeUI();
@@ -2667,6 +3026,57 @@ async function restoreSession(code) {
     } else {
         showToast("Không tìm thấy dữ liệu sự kiện!", "error");
     }
+}
+
+// === TẢI DỮ LIỆU GIAN LẬN TỪ FIREBASE ===
+function loadFraudDataFromFirebase(code) {
+    if (!code) return;
+    
+    const fraudRef = rdb.ref('fraud/' + code);
+    
+    fraudRef.once('value').then(snap => {
+        if (snap.exists()) {
+            const data = snap.val();
+            const records = Object.values(data);
+            
+            // Merge với dữ liệu local
+            const existingIds = new Set(fraudData.map(r => r.id));
+            let newRecords = [];
+            
+            records.forEach(record => {
+                if (!existingIds.has(record.id)) {
+                    newRecords.push(record);
+                }
+            });
+            
+            if (newRecords.length > 0) {
+                fraudData = [...newRecords, ...fraudData];
+                // Giới hạn số lượng
+                if (fraudData.length > 1000) {
+                    fraudData = fraudData.slice(0, 1000);
+                }
+                
+                // Lưu vào localStorage
+                try {
+                    localStorage.setItem('scheck_fraud_data', JSON.stringify(fraudData));
+                } catch (e) {}
+                
+                // Cập nhật UI
+                updateFraudBadge();
+                
+                // Cập nhật modal nếu đang mở
+                const modal = document.getElementById('fraud-data-modal');
+                if (!modal.classList.contains('hidden')) {
+                    renderFraudTable();
+                    updateFraudStats();
+                }
+                
+                console.log("📂 Đã tải dữ liệu gian lận từ Firebase:", newRecords.length, "bản ghi mới");
+            }
+        }
+    }).catch(err => {
+        console.warn("Không thể tải dữ liệu gian lận từ Firebase:", err);
+    });
 }
 
 function resetEventForm() {
@@ -2698,6 +3108,28 @@ function resetEventForm() {
     // Reset trạng thái thời gian
     resetTimeLimitState();
     updateTimeUI();
+    
+    // TẮT GPS VÀ ẨN NÚT DỮ LIỆU GIAN LẬN
+    const gpsToggle = document.getElementById('a-require-location');
+    if (gpsToggle) {
+        gpsToggle.checked = false;
+    }
+    const fraudBtnContainer = document.getElementById('fraud-btn-container');
+    if (fraudBtnContainer) {
+        fraudBtnContainer.classList.add('hidden');
+        fraudBtnContainer.classList.remove('animate-in', 'fade-in', 'duration-300');
+    }
+    const radiusContainer = document.getElementById('radius-setting-container');
+    if (radiusContainer) {
+        radiusContainer.style.opacity = "0.5";
+        radiusContainer.style.pointerEvents = "none";
+    }
+    
+    // Dừng lắng nghe gian lận cũ
+    if (fraudListenerRef && currentSession && currentSession.code) {
+        rdb.ref('fraud/' + currentSession.code).off();
+        fraudListenerRef = null;
+    }
     
     showToast("Giao diện đã được làm sạch!", "info");
 }
@@ -3028,11 +3460,11 @@ function toggleMute() {
     if (isMuted) {
         if (statusText) statusText.style.color = "#64748b";
         if (indicator) indicator.classList.add('hidden');
-        showToast("Đã tắt âm thanh thông báo", "info");
+        showToast("Đã tắt thông báo", "info");
     } else {
         if (statusText) statusText.style.color = "#10b981";
         if (indicator) indicator.classList.remove('hidden');
-        showToast("Đã bật âm thanh thông báo", "success");
+        showToast("Đã bật thông báo", "success");
     }
 }
 
@@ -3053,6 +3485,225 @@ function setupRealtimeNotify(code) {
         showToast(`🔔 MỚI: ${userName.toUpperCase()} đã điểm danh`, "success");
         playPingSound();
     });
+}
+
+// === LẮNG NGHE GIAN LẬN TỪ FIREBASE (REAL-TIME) ===
+function setupFraudListener(code) {
+    if (!code) {
+        console.warn("⚠️ Không có code để lắng nghe gian lận");
+        return;
+    }
+    
+    const fraudRef = rdb.ref('fraud/' + code);
+    console.log("🔍 Đang lắng nghe gian lận tại:", 'fraud/' + code);
+    
+    // Dừng listener cũ
+    if (fraudListenerRef) {
+        fraudRef.off();
+        fraudListenerRef = null;
+        console.log("🔄 Đã dừng listener cũ");
+    }
+    
+    let isFirstLoad = true;
+    
+    // Load dữ liệu cũ
+    fraudRef.once('value').then(snap => {
+        console.log("📂 Đã tải dữ liệu gian lận từ Firebase (lần đầu)");
+        if (snap.exists()) {
+            const data = snap.val();
+            const records = Object.values(data);
+            console.log("📊 Số bản ghi từ Firebase:", records.length);
+            
+            // ⚠️ THAY ĐỔI: Merge dữ liệu, KHÔNG reset
+            const existingIds = new Set(fraudData.map(r => r.id));
+            const newRecords = records.filter(r => !existingIds.has(r.id));
+            
+            if (newRecords.length > 0) {
+                fraudData = [...newRecords, ...fraudData];
+                if (fraudData.length > 1000) {
+                    fraudData = fraudData.slice(0, 1000);
+                }
+                try {
+                    localStorage.setItem('scheck_fraud_data', JSON.stringify(fraudData));
+                } catch (e) {}
+                
+                updateFraudBadge();
+                updateFraudUI();
+                console.log("📂 Đã thêm", newRecords.length, "bản ghi mới");
+            }
+        }
+        isFirstLoad = false;
+    }).catch(err => {
+        console.error("❌ LỖI TẢI DỮ LIỆU GIAN LẬN:", err);
+        isFirstLoad = false;
+        loadFraudData();
+    });
+
+    // Lắng nghe dữ liệu mới (real-time)
+    fraudListenerRef = fraudRef.on('child_added', (snap) => {
+        if (isFirstLoad) {
+            console.log("⏳ Đang load lần đầu, bỏ qua child_added");
+            return;
+        }
+
+        const data = snap.val();
+        if (!data) {
+            console.warn("⚠️ Dữ liệu rỗng");
+            return;
+        }
+        
+        console.log("🆕 Phát hiện gian lận mới từ Firebase:", data);
+        
+        // Kiểm tra trùng lặp
+        const exists = fraudData.some(r => r.id === data.id);
+        if (!exists) {
+            // Thêm vào đầu danh sách
+            fraudData.unshift(data);
+            if (fraudData.length > 1000) {
+                fraudData = fraudData.slice(0, 1000);
+            }
+            
+            try {
+                localStorage.setItem('scheck_fraud_data', JSON.stringify(fraudData));
+            } catch (e) {}
+            
+            updateFraudBadge();
+            updateFraudUI();
+            
+            if (!isMuted) {
+                const userName = data.name || "Không xác định";
+                const distance = data.distance || "?";
+                const reason = data.reason || "Ngoài bán kính";
+                
+                showToast(`🚨 GIAN LẬN: ${userName.toUpperCase()} - cách ${distance}m (${reason})`, "error");
+                playAlertSound();
+            }
+        } else {
+            console.log("⏭️ Đã có dữ liệu này, bỏ qua");
+        }
+    }, (error) => {
+        console.error("❌ LỖI LISTENER FIREBASE:", error);
+    });
+}
+
+// === RELOAD DỮ LIỆU GIAN LẬN (THỦ CÔNG) ===
+function reloadFraudData() {
+    if (currentSession && currentSession.code) {
+        showToast("🔄 Đang tải lại dữ liệu gian lận...", "info");
+        // ✅ SỬA: bỏ dynamic_attendance/
+        const fraudRef = rdb.ref('fraud/' + currentSession.code);
+        fraudRef.once('value').then(snap => {
+            if (snap.exists()) {
+                const data = snap.val();
+                const records = Object.values(data);
+                fraudData = records;
+                if (fraudData.length > 1000) {
+                    fraudData = fraudData.slice(0, 1000);
+                }
+                try {
+                    localStorage.setItem('scheck_fraud_data', JSON.stringify(fraudData));
+                } catch (e) {}
+                updateFraudBadge();
+                updateFraudUI();
+                showToast(`✅ Đã tải lại: ${fraudData.length} bản ghi gian lận`, "success");
+            } else {
+                fraudData = [];
+                try {
+                    localStorage.setItem('scheck_fraud_data', JSON.stringify(fraudData));
+                } catch (e) {}
+                updateFraudBadge();
+                updateFraudUI();
+                showToast("📂 Không có dữ liệu gian lận", "info");
+            }
+        }).catch(err => {
+            console.error("❌ Lỗi reload:", err);
+            showToast(`❌ Lỗi tải dữ liệu: ${err.message}`, "error");
+        });
+    } else {
+        showToast("⚠️ Không có session để tải dữ liệu!", "info");
+    }
+}
+
+// === CẬP NHẬT UI GIAN LẬN ===
+function updateFraudUI() {
+    const modal = document.getElementById('fraud-data-modal');
+    if (!modal.classList.contains('hidden')) {
+        renderFraudTable();
+        updateFraudStats();
+    }
+}
+
+// === TẢI DỮ LIỆU GIAN LẬN TỪ FIREBASE ===
+function loadFraudDataForSession(code) {
+    if (!code) {
+        console.warn("⚠️ Không có code để tải dữ liệu gian lận");
+        return;
+    }
+    
+    // ✅ SỬA: bỏ dynamic_attendance/
+    const fraudRef = rdb.ref('fraud/' + code);
+    console.log("📂 Đang tải dữ liệu gian lận cho session:", code);
+    
+    fraudRef.once('value').then(snap => {
+        if (snap.exists()) {
+            const data = snap.val();
+            const records = Object.values(data);
+            console.log("📊 Số bản ghi từ Firebase:", records.length);
+            
+            // Reset fraudData và load từ Firebase
+            fraudData = records;
+            if (fraudData.length > 1000) {
+                fraudData = fraudData.slice(0, 1000);
+            }
+            
+            // Lưu local
+            try {
+                localStorage.setItem('scheck_fraud_data', JSON.stringify(fraudData));
+            } catch (e) {}
+            
+            // Cập nhật UI
+            updateFraudBadge();
+            updateFraudUI();
+            console.log("✅ Đã tải dữ liệu gian lận:", fraudData.length, "bản ghi");
+        } else {
+            console.log("📂 Không có dữ liệu gian lận trên Firebase");
+            fraudData = [];
+            try {
+                localStorage.setItem('scheck_fraud_data', JSON.stringify(fraudData));
+            } catch (e) {}
+            updateFraudBadge();
+            updateFraudUI();
+        }
+    }).catch(err => {
+        console.warn("❌ Không thể tải dữ liệu gian lận từ Firebase:", err);
+        // Vẫn thử load từ local nếu có
+        loadFraudData();
+    });
+}
+
+// === ÂM THANH BÁO ĐỘNG GIAN LẬN ===
+function playAlertSound() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Phát 2 tiếng bíp liên tiếp (âm thanh báo động)
+        for (let i = 0; i < 2; i++) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'square'; // Âm thanh báo động
+            osc.frequency.setValueAtTime(600 + i * 100, audioCtx.currentTime + i * 0.3);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime + i * 0.3);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + i * 0.3 + 0.2);
+            
+            osc.start(audioCtx.currentTime + i * 0.3);
+            osc.stop(audioCtx.currentTime + i * 0.3 + 0.2);
+        }
+    } catch(e) {
+        console.warn("Browser blocked sound play");
+    }
 }
 
 function playPingSound() {
@@ -3212,7 +3863,17 @@ function getDistance(lat1, lon1, lat2, lon2) {
 async function handleGpsToggle() {
     const toggle = document.getElementById('a-require-location');
     const radiusContainer = document.getElementById('radius-setting-container');
+    const fraudBtnContainer = document.getElementById('fraud-btn-container');
     const isChecked = toggle.checked;
+
+    // HIỆN/ẨN NÚT DỮ LIỆU GIAN LẬN
+    if (isChecked) {
+        fraudBtnContainer.classList.remove('hidden');
+        fraudBtnContainer.classList.add('animate-in', 'fade-in', 'duration-300');
+    } else {
+        fraudBtnContainer.classList.add('hidden');
+        fraudBtnContainer.classList.remove('animate-in', 'fade-in', 'duration-300');
+    }
 
     if (isChecked) {
         radiusContainer.style.opacity = "1";
@@ -3221,6 +3882,13 @@ async function handleGpsToggle() {
         radiusContainer.style.opacity = "0.5";
         radiusContainer.style.pointerEvents = "none";
         showToast("CHẾ ĐỘ TỰ DO: ĐÃ TẮT BẢO MẬT GPS", "info");
+
+        // ẨN NÚT DỮ LIỆU GIAN LẬN
+        const fraudBtnContainer = document.getElementById('fraud-btn-container');
+        if (fraudBtnContainer) {
+            fraudBtnContainer.classList.add('hidden');
+            fraudBtnContainer.classList.remove('animate-in', 'fade-in', 'duration-300');
+        }
 
         if (currentSession && currentSession.code) {
             await rdb.ref('dynamic_attendance/sessions/' + currentSession.code).update({
@@ -3244,9 +3912,22 @@ async function handleGpsToggle() {
                 currentSession.requireLocation = true;
             }
             showToast("TÍN HIỆU GPS: ĐÃ SẴN SÀNG", "success");
+            
+            // HIỆN NÚT KHI GPS THÀNH CÔNG
+            const fraudBtnContainer = document.getElementById('fraud-btn-container');
+            if (fraudBtnContainer) {
+                fraudBtnContainer.classList.remove('hidden');
+                fraudBtnContainer.classList.add('animate-in', 'fade-in', 'duration-300');
+            }
         }, (err) => {
             toggle.checked = false;
             radiusContainer.style.opacity = "0.5";
+            // ẨN NÚT KHI LỖI GPS
+            const fraudBtnContainer = document.getElementById('fraud-btn-container');
+            if (fraudBtnContainer) {
+                fraudBtnContainer.classList.add('hidden');
+                fraudBtnContainer.classList.remove('animate-in', 'fade-in', 'duration-300');
+            }
             showToast(getGpsErrorMessage(err), "error");
         }, { enableHighAccuracy: true });
 
@@ -3254,6 +3935,12 @@ async function handleGpsToggle() {
         if (!currentSession) {
             toggle.checked = false;
             radiusContainer.style.opacity = "0.5";
+            // ẨN NÚT KHI CHƯA CÓ SỰ KIỆN
+            const fraudBtnContainer = document.getElementById('fraud-btn-container');
+            if (fraudBtnContainer) {
+                fraudBtnContainer.classList.add('hidden');
+                fraudBtnContainer.classList.remove('animate-in', 'fade-in', 'duration-300');
+            }
             return showToast("Vui lòng 'Kích hoạt' sự kiện trước khi bật GPS!", "error");
         }
 
@@ -3281,6 +3968,13 @@ async function handleGpsToggle() {
                 });
                 currentSession.requireLocation = true;
 
+                // HIỆN NÚT KHI GPS THÀNH CÔNG
+                const fraudBtnContainer = document.getElementById('fraud-btn-container');
+                if (fraudBtnContainer) {
+                    fraudBtnContainer.classList.remove('hidden');
+                    fraudBtnContainer.classList.add('animate-in', 'fade-in', 'duration-300');
+                }
+
                 anchorRef.off();
             }
         });
@@ -3291,7 +3985,15 @@ function closeAnchorModal() {
     document.getElementById('anchor-qr-modal').classList.add('hidden');
 
     const toggle = document.getElementById('a-require-location');
-    if (toggle) toggle.checked = false;
+    if (toggle) {
+        toggle.checked = false;
+        // ẨN NÚT DỮ LIỆU GIAN LẬN
+        const fraudBtnContainer = document.getElementById('fraud-btn-container');
+        if (fraudBtnContainer) {
+            fraudBtnContainer.classList.add('hidden');
+            fraudBtnContainer.classList.remove('animate-in', 'fade-in', 'duration-300');
+        }
+    }
 
     document.getElementById('anchor-qr-box').innerHTML = "";
 
@@ -3383,6 +4085,22 @@ function finishActivationProcess(code, title) {
     btn.style.background = "linear-gradient(135deg, #10b981, #3b82f6)";
 }
 
+// ===== BIẾN KIỂM SOÁT =====
+let isSavingRadius = false;
+
+// ===== HÀM GỌI CÓ KIỂM SOÁT (chỉ chạy 1 lần) =====
+function queueSaveRadius() {
+    if (isSavingRadius) {
+        console.log("⏳ Đang xử lý, bỏ qua lần gọi trùng");
+        return;
+    }
+    isSavingRadius = true;
+    
+    // Gọi hàm thực tế
+    saveRadiusSettings();
+}
+
+// ===== HÀM LƯU BÁN KÍNH (KHÔNG ĐỔI) =====
 async function saveRadiusSettings() {
     const radiusInput = document.getElementById('a-location-radius');
     const val = parseInt(radiusInput.value);
@@ -3390,15 +4108,14 @@ async function saveRadiusSettings() {
     if (isNaN(val) || val < 50) {
         radiusInput.value = 50; 
         showToast("BÁN KÍNH BẢO MẬT TỐI THIỂU LÀ 50M!", "error");
+        isSavingRadius = false; // Mở khóa
         return; 
     }
 
     pendingRadius = val;
 
     if (currentSession && currentSession.code) {
-        const btn = (window.event && window.event.type === 'click') 
-                    ? window.event.currentTarget 
-                    : document.querySelector('button[onclick="saveRadiusSettings()"]');
+        const btn = document.querySelector('button[onclick="queueSaveRadius()"]');
 
         try {
             await rdb.ref('dynamic_attendance/sessions/' + currentSession.code).update({
@@ -3409,9 +4126,16 @@ async function saveRadiusSettings() {
             showToast(`ĐÃ CẬP NHẬT BÁN KÍNH: ${val}M`, "success");
             
             if (btn) {
-                btn.innerHTML = "ĐÃ LƯU";
+                btn.innerHTML = "✓ ĐÃ LƯU";
                 btn.style.background = "#10b981";
-                setTimeout(() => { btn.innerHTML = "LƯU"; btn.style.background = ""; }, 1000);
+                btn.style.color = "white";
+                setTimeout(() => { 
+                    if (btn) {
+                        btn.innerHTML = "LƯU"; 
+                        btn.style.background = ""; 
+                        btn.style.color = "";
+                    }
+                }, 1200);
             }
         } catch (e) {
             showToast("Lỗi kết nối máy chủ!", "error");
@@ -3419,6 +4143,11 @@ async function saveRadiusSettings() {
     } else {
         showToast(`ĐÃ GHI NHẬN ${val}M. BẤM KÍCH HOẠT ĐỂ ÁP DỤNG.`, "info");
     }
+    
+    // Mở khóa sau 300ms (để debounce các lần gọi liên tiếp)
+    setTimeout(() => {
+        isSavingRadius = false;
+    }, 300);
 }
 
 function getGpsErrorMessage(err) {
@@ -4729,6 +5458,549 @@ function restoreTimeStateFromFirebase(code) {
         <button onclick="closeUploadModal()" class="text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors">Hủy bỏ thao tác</button>
     </div>
 </div>
+
+<!-- MODAL DỮ LIỆU GIAN LẬN (THÊM MỚI) -->
+<div id="fraud-data-modal" class="fixed inset-0 z-[13000] hidden items-center justify-center p-4 modal-backdrop-blur" onclick="closeFraudModal(event)">
+    <div class="glass time-modal-card p-6 lg:p-8 rounded-[40px] max-w-4xl w-full fraud-modal-enter border border-white/10" onclick="event.stopPropagation()">
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <h3 class="text-2xl font-black uppercase italic text-red-400 flex items-center gap-3">
+                    <i class="fa-solid fa-triangle-exclamation"></i> DỮ LIỆU GIAN LẬN
+                </h3>
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-[2px] mt-1">Danh sách các trường hợp điểm danh từ xa đã bị từ chối</p>
+            </div>
+            <button onclick="closeFraudModal()" class="w-8 h-8 flex items-center justify-center bg-white/5 rounded-full text-slate-400 hover:text-white transition-colors">✕</button>
+        </div>
+
+        <!-- Khu vực thống kê -->
+        <div class="grid grid-cols-3 gap-3 mb-6">
+            <div class="bg-white/5 p-3 rounded-xl text-center border border-white/5">
+                <p class="text-[8px] text-slate-500 uppercase font-bold">Tổng bị từ chối</p>
+                <p id="fraud-total" class="text-xl font-black text-red-400">0</p>
+            </div>
+            <div class="bg-white/5 p-3 rounded-xl text-center border border-white/5">
+                <p class="text-[8px] text-slate-500 uppercase font-bold">Trong bán kính</p>
+                <p id="fraud-near" class="text-xl font-black text-emerald-400">0</p>
+            </div>
+            <div class="bg-white/5 p-3 rounded-xl text-center border border-white/5">
+                <p class="text-[8px] text-slate-500 uppercase font-bold">Ngoài bán kính</p>
+                <p id="fraud-far" class="text-xl font-black text-red-400">0</p>
+            </div>
+        </div>
+
+        <!-- Bảng dữ liệu -->
+        <div class="fraud-table-container border border-white/5 rounded-2xl bg-black/20 overflow-auto">
+            <table class="w-full text-left border-separate border-spacing-0">
+                <thead class="text-slate-500 text-[9px] uppercase font-black tracking-widest sticky top-0 bg-[#0f172a] z-10">
+                    <tr>
+                        <th class="px-3 py-3 text-center w-10">✕</th>  <!-- Cột Xóa -->
+                        <th class="px-4 py-3 text-center w-12">STT</th>
+                        <th class="px-4 py-3 text-left">Họ tên</th>
+                        <th class="px-4 py-3 text-center">Khoảng cách</th>
+                        <th class="px-4 py-3 text-center">Trạng thái</th>
+                        <th class="px-4 py-3 text-center">Thời gian</th>
+                    </tr>
+                </thead>
+                <tbody id="fraud-table-body" class="text-sm">
+                    <!-- JS render -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Nút xuất Excel -->
+        <div class="mt-6 flex gap-3">
+            <button onclick="closeFraudModal()" class="flex-1 py-3 bg-white/5 rounded-xl font-black uppercase text-[10px] text-slate-400 hover:bg-white/10 transition-all">Đóng</button>
+            <button onclick="exportFraudData()" class="flex-1 py-3 bg-red-600 rounded-xl font-black uppercase text-[10px] text-white shadow-lg shadow-red-900/30 active:scale-95 transition-all">
+                <i class="fa-solid fa-file-excel mr-2"></i> Xuất Excel
+            </button>
+            <button onclick="clearFraudData()" class="flex-1 py-3 bg-slate-800 rounded-xl font-black uppercase text-[10px] text-slate-400 hover:bg-slate-700 transition-all">
+                <i class="fa-solid fa-trash mr-2"></i> Xóa
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// === THÊM BIẾN TOÀN CỤC ===
+// === ĐẦU FILE, SAU CÁC BIẾN TOÀN CỤC ===
+let fraudData = [];
+let fraudListenerRef = null;
+let lastFraudRecord = null;
+let lastFraudTime = 0;
+let isFraudNotificationShown = false;
+let fraudNotificationTimeout = null;
+
+
+// === HÀM MỞ MODAL DỮ LIỆU GIAN LẬN ===
+function openFraudModal() {
+    const modal = document.getElementById('fraud-data-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    renderFraudTable();
+    updateFraudStats();
+}
+
+// === HÀM ĐÓNG MODAL ===
+function closeFraudModal(event) {
+    if (event && event.target && event.target.id !== 'fraud-data-modal') return;
+    const modal = document.getElementById('fraud-data-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// === THÊM DỮ LIỆU GIAN LẬN ===
+function addFraudRecord(name, distance, time, reason = 'Ngoài bán kính') {
+    // 🔍 KIỂM TRA TRÙNG LẶP TRONG 5 GIÂY
+    const recentFraud = fraudData.filter(r => {
+        const timeDiff = Date.now() - r.timestamp;
+        return r.name === name && Math.abs(r.distance - Math.round(distance)) < 10 && timeDiff < 5000;
+    });
+    
+    if (recentFraud.length > 0) {
+        console.log("⏭️ Bỏ qua ghi nhận trùng lặp (admin):", name);
+        return;
+    }
+    
+    const record = {
+        id: Date.now() + Math.random().toString(36).substr(2, 5),
+        name: name || 'Không xác định',
+        distance: Math.round(distance),
+        time: time || new Date().toLocaleString('vi-VN'),
+        reason: reason,
+        timestamp: Date.now()
+    };
+    
+    console.log("📝 Đang ghi nhận gian lận (admin):", record);
+    
+    // Lưu local trước
+    fraudData.unshift(record);
+    if (fraudData.length > 1000) {
+        fraudData = fraudData.slice(0, 1000);
+    }
+    try {
+        localStorage.setItem('scheck_fraud_data', JSON.stringify(fraudData));
+    } catch (e) {}
+    
+    // Cập nhật badge ngay
+    updateFraudBadge();
+    
+    // 🔴 THÔNG BÁO CHO ADMIN
+    if (!isMuted) {
+        showToast(`🚨 GIAN LẬN: ${record.name.toUpperCase()} - cách ${record.distance}m`, "error");
+        playAlertSound();
+    }
+    
+    // 📤 LƯU LÊN FIREBASE - NODE FRAUD RIÊNG
+    if (currentSession && currentSession.code) {
+        const fraudRef = rdb.ref('fraud/' + currentSession.code);
+        console.log("📤 Đang lưu lên Firebase:", 'fraud/' + currentSession.code);
+        
+        fraudRef.push(record)
+            .then(() => {
+                console.log("✅ Đã lưu gian lận lên Firebase thành công:", record);
+                const modal = document.getElementById('fraud-data-modal');
+                if (!modal.classList.contains('hidden')) {
+                    renderFraudTable();
+                    updateFraudStats();
+                }
+            })
+            .catch(err => {
+                console.error("❌ LỖI KHI LƯU LÊN FIREBASE:", err);
+                showToast(`❌ Lỗi lưu dữ liệu gian lận: ${err.message}`, "error");
+            });
+    } else {
+        console.warn("⚠️ Không có session để lưu gian lận lên Firebase");
+    }
+}
+
+// === LƯU LOCAL (HÀM PHỤ TRỢ) ===
+function saveFraudLocal(record) {
+    fraudData.unshift(record);
+    if (fraudData.length > 1000) {
+        fraudData = fraudData.slice(0, 1000);
+    }
+    try {
+        localStorage.setItem('scheck_fraud_data', JSON.stringify(fraudData));
+    } catch (e) {}
+    
+    // Cập nhật UI nếu modal đang mở
+    const modal = document.getElementById('fraud-data-modal');
+    if (!modal.classList.contains('hidden')) {
+        renderFraudTable();
+        updateFraudStats();
+    }
+}
+
+// === CẬP NHẬT BADGE ===
+function updateFraudBadge() {
+    const badge = document.getElementById('fraud-badge');
+    if (badge) {
+        badge.innerText = fraudData.length;
+        console.log("🔄 Cập nhật badge:", fraudData.length);
+    }
+}
+
+// === TẢI DỮ LIỆU GIAN LẬN TỪ LOCALSTORAGE ===
+function loadFraudData() {
+    try {
+        const saved = localStorage.getItem('scheck_fraud_data');
+        if (saved) {
+            fraudData = JSON.parse(saved);
+            console.log("📂 Đã tải dữ liệu gian lận:", fraudData.length, "bản ghi");
+        } else {
+            fraudData = [];
+            console.log("📂 Không có dữ liệu gian lận");
+        }
+    } catch (e) {
+        fraudData = [];
+        console.error("❌ Lỗi tải dữ liệu:", e);
+    }
+    updateFraudBadge(); // Cập nhật badge khi load
+}
+
+// === HIỂN THỊ BẢNG DỮ LIỆU GIAN LẬN ===
+function renderFraudTable() {
+    const tbody = document.getElementById('fraud-table-body');
+    if (!tbody) return;
+    
+    if (fraudData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center py-12 text-slate-500 text-xs font-bold uppercase tracking-widest">
+                    <i class="fa-regular fa-face-smile text-2xl block mb-3"></i>
+                    Chưa có dữ liệu gian lận
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = fraudData.map((record, index) => {
+    let distanceText = '';
+    let tagClass = 'unknown';
+    let statusText = 'Không xác định';
+    
+    if (record.distance !== undefined && record.distance !== null) {
+        const dist = record.distance;
+        if (dist <= 50) {
+            distanceText = `${dist}m`;
+            tagClass = 'near';
+            statusText = '✅ Gần vị trí điểm danh';
+        } else if (dist <= 500) {
+            distanceText = `${dist}m`;
+            tagClass = 'far';
+            statusText = '⚠️ Khá xa';
+        } else {
+            distanceText = `${dist}m`;
+            tagClass = 'very-far';
+            statusText = '❌ Quá xa';
+        }
+    } else {
+        distanceText = 'N/A';
+        tagClass = 'unknown';
+        statusText = 'Không xác định';
+    }
+    
+    return `
+        <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+            <!-- Cột Xóa - LUÔN HIỂN THỊ -->
+            <td style="width:50px; min-width:50px; max-width:50px; padding:6px 4px; text-align:center; vertical-align:middle;">
+                <button onclick="deleteFraudRecord('${record.id}')" 
+                        class="fraud-delete-btn"
+                        title="Xóa bản ghi này">
+                    ✕
+                </button>
+            </td>
+            <!-- Cột STT -->
+            <td style="width:40px; min-width:40px; max-width:40px; padding:10px 4px; text-align:center; vertical-align:middle;" 
+                class="text-slate-400 font-bold text-sm">${index + 1}</td>
+            <!-- Cột Họ tên -->
+            <td style="padding:10px 14px; vertical-align:middle;" 
+                class="font-bold text-white text-sm">${record.name || 'Không xác định'}</td>
+            <!-- Cột Khoảng cách -->
+            <td style="padding:10px 14px; vertical-align:middle; text-align:center;">
+                <span class="distance-tag ${tagClass}">${distanceText}</span>
+            </td>
+            <!-- Cột Trạng thái -->
+            <td style="padding:10px 14px; vertical-align:middle; text-align:center;" 
+                class="text-xs font-bold">
+                <span class="${tagClass === 'near' ? 'text-success' : tagClass === 'far' ? 'text-warning' : 'text-danger'}">
+                    ${statusText}
+                </span>
+            </td>
+            <!-- Cột Thời gian -->
+            <td style="padding:10px 14px; vertical-align:middle; text-align:center;" 
+                class="text-slate-400 text-xs font-mono">${record.time || '--'}</td>
+        </tr>
+    `;
+}).join('');
+}
+
+// === XÓA MỘT BẢN GHI GIAN LẬN ===
+function deleteFraudRecord(recordId) {
+    if (!recordId) return;
+    
+    // Tìm bản ghi cần xóa
+    const record = fraudData.find(r => r.id === recordId);
+    if (!record) {
+        showToast("Không tìm thấy bản ghi!", "error");
+        return;
+    }
+    
+    const name = record.name || 'Không xác định';
+    
+    showConfirm(`XÁC NHẬN: Bạn muốn xóa bản ghi gian lận của "${name}"?`, async () => {
+        try {
+            // Xóa khỏi mảng fraudData
+            fraudData = fraudData.filter(r => r.id !== recordId);
+            
+            // Cập nhật localStorage
+            try {
+                localStorage.setItem('scheck_fraud_data', JSON.stringify(fraudData));
+            } catch (e) {}
+            
+            // Xóa trên Firebase
+            if (currentSession && currentSession.code) {
+                // Tìm key của record trong Firebase
+                const fraudRef = rdb.ref('fraud/' + currentSession.code);
+                const snap = await fraudRef.orderByChild('id').equalTo(recordId).once('value');
+                
+                if (snap.exists()) {
+                    const key = Object.keys(snap.val())[0];
+                    await fraudRef.child(key).remove();
+                    console.log("✅ Đã xóa trên Firebase:", recordId);
+                }
+            }
+            
+            // Cập nhật UI
+            renderFraudTable();
+            updateFraudStats();
+            updateFraudBadge();
+            
+            showToast(`Đã xóa bản ghi của "${name}"!`, "success");
+            
+        } catch (e) {
+            console.error("Lỗi xóa bản ghi:", e);
+            showToast("Lỗi khi xóa dữ liệu!", "error");
+        }
+    });
+}
+
+// === CẬP NHẬT THỐNG KÊ ===
+function updateFraudStats() {
+    const total = fraudData.length;
+    const near = fraudData.filter(r => r.distance !== undefined && r.distance <= 50).length;
+    const far = total - near;
+    
+    document.getElementById('fraud-total').innerText = total;
+    document.getElementById('fraud-near').innerText = near;
+    document.getElementById('fraud-far').innerText = far;
+}
+
+// === XUẤT DỮ LIỆU GIAN LẬN RA EXCEL ===
+async function exportFraudData() {
+    if (fraudData.length === 0) {
+        return showToast("Không có dữ liệu gian lận để xuất!", "info");
+    }
+    
+    showToast("Đang tạo báo cáo gian lận...", "info");
+    
+    try {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('GianLan');
+        worksheet.views = [{ state: 'frozen', xSplit: 1, ySplit: 2, activeCell: 'A4' }];
+        
+        let currentRow = 1;
+        const totalCols = 5; // STT, Họ tên, Khoảng cách, Trạng thái, Thời gian
+        
+        const mergeAndSet = (startRow, startCol, endRow, endCol, value, font, align = 'center') => {
+            worksheet.mergeCells(startRow, startCol, endRow, endCol);
+            const cell = worksheet.getCell(startRow, startCol);
+            cell.value = value;
+            cell.font = { name: 'Times New Roman', ...font };
+            cell.alignment = { vertical: 'middle', horizontal: align };
+        };
+        
+        const setHeaderCell = (row, col, value, bgColor) => {
+            const cell = worksheet.getCell(row, col);
+            cell.value = value;
+            cell.font = { name: 'Times New Roman', bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        };
+        
+        const setDataCell = (row, col, value, color = 'FF000000') => {
+            const cell = worksheet.getCell(row, col);
+            cell.value = value;
+            cell.font = { name: 'Times New Roman', size: 11, color: { argb: color } };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        };
+        
+        // === TIÊU ĐỀ CHÍNH ===
+        mergeAndSet(1, 1, 1, totalCols, "DỮ LIỆU GIAN LẬN - HỆ THỐNG ĐIỂM DANH TỰ ĐỘNG", 
+            { size: 16, bold: true, color: { argb: 'FFDC2626' } });
+        
+        // === TÊN SỰ KIỆN ===
+        const eventName = currentSession ? currentSession.title : 'Không xác định';
+        mergeAndSet(2, 1, 2, totalCols, eventName.toUpperCase(), 
+            { size: 13, bold: true, color: { argb: 'FFDC2626' } });
+        
+        // === DÒNG THỐNG KÊ ===
+        const totalFraud = fraudData.length;
+        const nearCount = fraudData.filter(r => r.distance !== undefined && r.distance <= 50).length;
+        const farCount = totalFraud - nearCount;
+        
+        currentRow = 4;
+        mergeAndSet(currentRow, 1, currentRow, totalCols, 
+            `📊 TỔNG: ${totalFraud} | TRONG BÁN KÍNH: ${nearCount} | NGOÀI BÁN KÍNH: ${farCount}`, 
+            { size: 11, bold: true, color: { argb: 'FFDC2626' } }, 'left');
+        currentRow++;
+        
+        // === HEADER - MÀU ĐỎ ===
+        const headers = ['STT', 'Họ tên', 'Khoảng cách (m)', 'Trạng thái', 'Thời gian'];
+        for (let i = 0; i < headers.length; i++) {
+            setHeaderCell(currentRow, i + 1, headers[i], 'FFDC2626');
+        }
+        currentRow++;
+        
+        // === DỮ LIỆU ===
+        fraudData.forEach((record, index) => {
+            let status = '';
+            let color = 'FF000000';
+            
+            if (record.distance !== undefined && record.distance !== null) {
+                if (record.distance <= 50) {
+                    status = '✅ Gần vị trí điểm danh';
+                    color = 'FF10B981'; // Xanh lá
+                } else if (record.distance <= 500) {
+                    status = '⚠️ Khá xa';
+                    color = 'FFF59E0B'; // Vàng
+                } else {
+                    status = '❌ Quá xa';
+                    color = 'FFDC2626'; // Đỏ
+                }
+            } else {
+                status = 'Không xác định';
+                color = 'FF94A3B8'; // Xám
+            }
+            
+            setDataCell(currentRow, 1, index + 1);
+            setDataCell(currentRow, 2, record.name || 'Không xác định');
+            setDataCell(currentRow, 3, record.distance !== undefined && record.distance !== null ? record.distance : 'N/A');
+            setDataCell(currentRow, 4, status, color);
+            setDataCell(currentRow, 5, record.time || '--');
+            currentRow++;
+        });
+        
+        // === DÒNG TỔNG KẾT ===
+        mergeAndSet(currentRow, 1, currentRow, totalCols, 
+            `Tổng số bản ghi gian lận: ${fraudData.length}`, 
+            { size: 10, italic: true, bold: true, color: { argb: 'FFDC2626' } }, 'center');
+        currentRow++;
+        
+        mergeAndSet(currentRow, 1, currentRow, totalCols, 
+            `Báo cáo được xuất từ hệ thống S-CHECK Pro vào lúc ${new Date().toLocaleString('vi-VN')}`, 
+            { size: 10, italic: true, color: { argb: 'FF7F7F7F' } }, 'center');
+        
+        // === SET ĐỘ RỘNG CỘT ===
+        worksheet.getColumn(1).width = 8;
+        worksheet.getColumn(2).width = 25;
+        worksheet.getColumn(3).width = 18;
+        worksheet.getColumn(4).width = 25;
+        worksheet.getColumn(5).width = 22;
+        
+        // === TẠO FILE ===
+        const buffer = await workbook.xlsx.writeBuffer();
+        const title = currentSession ? currentSession.title : 'GianLan';
+        saveAs(new Blob([buffer]), `Dữ liệu gian lận_${title}.xlsx`);
+        showToast("Xuất báo cáo gian lận thành công!", "success");
+        
+    } catch (e) {
+        console.error(e);
+        showToast("Lỗi xuất file: " + e.message, "error");
+    }
+}
+
+// === XÓA DỮ LIỆU GIAN LẬN ===
+function clearFraudData() {
+    if (fraudData.length === 0) {
+        return showToast("Không có dữ liệu để xóa!", "info");
+    }
+    
+    showConfirm("XÁC NHẬN: Bạn muốn xóa toàn bộ dữ liệu gian lận?", async () => {
+        try {
+            if (currentSession && currentSession.code) {
+                // ✅ SỬA: bỏ dynamic_attendance/
+                await rdb.ref('fraud/' + currentSession.code).remove();
+            }
+            fraudData = [];
+            try {
+                localStorage.removeItem('scheck_fraud_data');
+            } catch (e) {}
+            renderFraudTable();
+            updateFraudStats();
+            updateFraudBadge();
+            showToast("Đã xóa dữ liệu gian lận!", "success");
+        } catch (err) {
+            console.error("Lỗi xóa:", err);
+            showToast("Lỗi khi xóa dữ liệu!", "error");
+        }
+    });
+}
+
+// === DEBUG: KIỂM TRA DỮ LIỆU GIAN LẬN ===
+function debugFraudData() {
+    console.log("📊 DỮ LIỆU GIAN LẬN:");
+    console.log("Tổng số:", fraudData.length);
+    console.log("Chi tiết:", fraudData);
+    
+    const badge = document.getElementById('fraud-badge');
+    if (badge) {
+        console.log("Badge hiển thị:", badge.innerText);
+    }
+    
+    const modal = document.getElementById('fraud-data-modal');
+    if (modal) {
+        console.log("Modal đang mở:", !modal.classList.contains('hidden'));
+    }
+}
+
+// === KHỞI TẠO ===
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("🚀 Khởi tạo hệ thống chống gian lận...");
+    
+    // Load dữ liệu gian lận từ localStorage
+    loadFraudData();
+    
+    // KIỂM TRA TRẠNG THÁI GPS BAN ĐẦU
+    const gpsToggle = document.getElementById('a-require-location');
+    const fraudBtnContainer = document.getElementById('fraud-btn-container');
+    const radiusContainer = document.getElementById('radius-setting-container');
+    
+    if (gpsToggle && fraudBtnContainer) {
+        if (gpsToggle.checked) {
+            fraudBtnContainer.classList.remove('hidden');
+            if (radiusContainer) {
+                radiusContainer.style.opacity = "1";
+                radiusContainer.style.pointerEvents = "auto";
+            }
+        } else {
+            fraudBtnContainer.classList.add('hidden');
+            if (radiusContainer) {
+                radiusContainer.style.opacity = "0.5";
+                radiusContainer.style.pointerEvents = "none";
+            }
+        }
+    }
+    
+    console.log("✅ Hệ thống chống gian lận đã sẵn sàng!");
+});
+
+// === XÓA PHẦN THÊM NÚT TỰ ĐỘNG (đã được thêm trực tiếp vào HTML) ===
+// Không cần đoạn code thêm nút ở đây nữa
+</script>
 
 <!-- ===== THÊM SCRIPT KHỞI TẠO THỜI GIAN KHI RESTORE ===== -->
 <script>
