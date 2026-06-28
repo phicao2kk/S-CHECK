@@ -1637,6 +1637,10 @@ function createSlug(str) {
     str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
     str = str.replace(/đ/g, "d");
     str = str.replace(/\s+/g, "-");
+    
+    // 👇 THÊM DÒNG NÀY: Xóa tất cả ký tự không hợp lệ
+    str = str.replace(/[^a-z0-9-]/g, "");  // Chỉ giữ a-z, 0-9 và dấu gạch ngang
+    
     return str + "-" + Math.floor(1000 + Math.random() * 9000);
 }
 
