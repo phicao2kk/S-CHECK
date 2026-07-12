@@ -4259,6 +4259,11 @@ async function handleFileSelected(input) {
 
             if (rows.length < 1) return showToast("File không có dữ liệu!", "error");
 
+            // ===== LOG DỮ LIỆU THÔ ĐỂ DEBUG =====
+            console.log("📊 Toàn bộ rows:", rows);
+            console.log("📊 Header row:", rows[0]);
+
+            // ===== XÁC ĐỊNH CỘT =====
             const headerRow = rows[0];
             let colIndexes = {
                 name: -1,
@@ -4280,10 +4285,12 @@ async function handleFileSelected(input) {
                 }
             }
             
+            // Nếu không tìm thấy, gán mặc định
             if (colIndexes.name === -1) colIndexes.name = 0;
             if (colIndexes.className === -1 && headerRow.length > 1) colIndexes.className = 1;
             if (colIndexes.group === -1 && headerRow.length > 2) colIndexes.group = 2;
             
+            // Xử lý trường hợp có cột STT
             const firstHeader = (headerRow[0] || "").toString().toLowerCase().trim();
             if (firstHeader === "stt" || firstHeader === "số thứ tự" || firstHeader === "no.") {
                 if (colIndexes.name !== -1 && colIndexes.name === 0) colIndexes.name = 1;
@@ -4292,19 +4299,24 @@ async function handleFileSelected(input) {
             }
             
             window.currentColIndexes = JSON.parse(JSON.stringify(colIndexes));
-            
-            console.log("Cột xác định được:", colIndexes);
-            
-            const groupKeywords = ["nhóm", "tổ", "đội", "team", "group", "phòng", "ban"];
-            let currentGroup = null;
-            let currentHeaders = [];
-            let rawMembers = [];
+            console.log("✅ Cột xác định được:", colIndexes);
 
-            for (let i = 0; i < rows.length; i++) {
+            // ===== ĐỌC DỮ LIỆU =====
+            const groupKeywords = ["nhóm", "tổ", "đội", "team", "group", "phòng", "ban"];
+            let currentGroup = "DANH SÁCH CHÍNH"; // Nhóm mặc định
+            let defaultHeaders = headerRow; // Header mặc định
+            let rawMembers = [];
+            let foundAnyData = false;
+
+            console.log("📌 Bắt đầu đọc dữ liệu từ dòng 1...");
+
+            for (let i = 1; i < rows.length; i++) {
                 const row = rows[i];
-                if (!row || row.length === 0) continue;
+                if (!row || row.length === 0 || row.every(cell => cell === "")) continue;
                 
                 const firstCell = (row[0] || "").toString().toLowerCase().trim();
+                
+                // ===== KIỂM TRA DÒNG NHÓM =====
                 let isGroupRow = false;
                 for (let kw of groupKeywords) {
                     if (firstCell.includes(kw)) {
@@ -4315,62 +4327,138 @@ async function handleFileSelected(input) {
                 
                 if (isGroupRow) {
                     currentGroup = normalizeGroupName(firstCell);
+                    console.log("📌 Nhóm mới:", currentGroup);
+                    // Lấy header của nhóm nếu có
                     if (i + 1 < rows.length && rows[i + 1]) {
-                        currentHeaders = rows[i + 1];
-                        i++;
+                        const nextRow = rows[i + 1];
+                        // Kiểm tra nếu dòng tiếp theo là header (chứa từ khóa tên/lớp)
+                        const nextFirst = (nextRow[0] || "").toString().toLowerCase().trim();
+                        const isHeader = nextFirst.includes("tên") || nextFirst.includes("họ") || 
+                                        nextFirst.includes("lớp") || nextFirst.includes("phòng") ||
+                                        nextFirst.includes("stt");
+                        if (isHeader) {
+                            defaultHeaders = nextRow;
+                            i++; // Bỏ qua dòng header
+                            console.log("📌 Header nhóm:", defaultHeaders);
+                        }
                     }
                     continue;
                 }
+
+                // ===== BỎ QUA DÒNG RÁC =====
+                const skipRubbish = ["stt", "số thứ tự", "họ và tên", "lớp", "phòng ban", "đối soát", "tổng", "tổng cộng"];
+                let isRubbish = false;
+                for (let kw of skipRubbish) {
+                    if (firstCell === kw || firstCell.includes(kw)) {
+                        isRubbish = true;
+                        break;
+                    }
+                }
+                if (isRubbish) {
+                    console.log("⏭️ Bỏ qua dòng rác:", firstCell);
+                    continue;
+                }
+
+                // ===== LẤY TÊN TỪ CỘT PHÙ HỢP =====
+                let name = "";
+                let className = "";
                 
-                if (currentGroup && currentHeaders && currentHeaders.length > 0) {
-                    let nameCol = -1;
-                    let classCol = -1;
-                    
-                    for (let j = 0; j < currentHeaders.length; j++) {
-                        const header = (currentHeaders[j] || "").toString().toLowerCase();
-                        if (header.includes("tên") || header.includes("họ") || header === "name") {
-                            nameCol = j;
-                        }
-                        if (header.includes("lớp") || header.includes("phòng") || header === "class") {
-                            classCol = j;
-                        }
+                // Lấy tên từ cột đã xác định
+                if (colIndexes.name !== -1 && row[colIndexes.name] !== undefined && row[colIndexes.name] !== null) {
+                    name = row[colIndexes.name].toString().trim();
+                } else if (row[0] !== undefined && row[0] !== null) {
+                    name = row[0].toString().trim();
+                }
+                
+                // Lấy lớp từ cột đã xác định
+                if (colIndexes.className !== -1 && row[colIndexes.className] !== undefined && row[colIndexes.className] !== null) {
+                    className = row[colIndexes.className].toString().trim();
+                } else if (row[1] !== undefined && row[1] !== null) {
+                    className = row[1].toString().trim();
+                }
+
+                // ===== KIỂM TRA TÊN HỢP LỆ =====
+                if (name === "") {
+                    console.log("⏭️ Bỏ qua dòng trống tên");
+                    continue;
+                }
+                
+                // Bỏ qua nếu tên là số hoặc quá ngắn (trừ trường hợp số là tên hợp lệ)
+                if (!isNaN(name) && name.length < 3) {
+                    console.log("⏭️ Bỏ qua tên số:", name);
+                    continue;
+                }
+
+                foundAnyData = true;
+                const normalizedId = normalizeVietnameseName(name);
+                
+                console.log(`✅ Thành viên: "${name}" (Lớp: "${className}") -> ${normalizedId}`);
+                
+                rawMembers.push({
+                    group: currentGroup,
+                    row: [name, className],
+                    identifier: name,
+                    normalizedId: normalizedId,
+                    nameValue: name,
+                    classValue: className
+                });
+            }
+
+            // ===== KIỂM TRA KẾT QUẢ =====
+            console.log("📊 Raw members:", rawMembers);
+            console.log("📊 Tổng số thành viên tìm thấy:", rawMembers.length);
+
+            if (rawMembers.length === 0) {
+                // Thử đọc theo cách khác: dùng toàn bộ rows
+                console.log("🔄 Thử đọc lại với header mặc định...");
+                
+                // Tìm dòng header thực sự
+                let realHeaderRow = null;
+                let headerIndex = -1;
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row) continue;
+                    const first = (row[0] || "").toString().toLowerCase().trim();
+                    if (first.includes("họ") || first.includes("tên") || first.includes("name")) {
+                        realHeaderRow = row;
+                        headerIndex = i;
+                        break;
                     }
-                    
-                    if (nameCol === -1) nameCol = 0;
-                    if (classCol === -1 && currentHeaders.length > 1) classCol = 1;
-                    
-                    let identifier = (row[nameCol] !== undefined && row[nameCol] !== null) ? row[nameCol].toString().trim() : "";
-                    if (identifier === "") continue;
-                    
-                    const lowerId = identifier.toLowerCase();
-                    const skipRubbish = ["stt", "số thứ tự", "họ và tên", "lớp", "phòng ban"];
-                    let isRubbish = false;
-                    for (let kw of skipRubbish) {
-                        if (lowerId === kw || lowerId.includes(kw)) {
-                            isRubbish = true;
-                            break;
-                        }
+                }
+                
+                if (realHeaderRow) {
+                    console.log("📌 Tìm thấy header thực:", realHeaderRow);
+                    // Đọc từ dòng sau header
+                    for (let i = headerIndex + 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (!row || row.length === 0 || row.every(cell => cell === "")) continue;
+                        
+                        let name = (row[0] !== undefined && row[0] !== null) ? row[0].toString().trim() : "";
+                        let className = (row[1] !== undefined && row[1] !== null) ? row[1].toString().trim() : "";
+                        
+                        if (name === "" || (!isNaN(name) && name.length < 3)) continue;
+                        
+                        const normalizedId = normalizeVietnameseName(name);
+                        rawMembers.push({
+                            group: "DANH SÁCH CHÍNH",
+                            row: [name, className],
+                            identifier: name,
+                            normalizedId: normalizedId,
+                            nameValue: name,
+                            classValue: className
+                        });
                     }
-                    if (isRubbish) continue;
-                    
-                    const className = (row[classCol] !== undefined && row[classCol] !== null) ? row[classCol].toString().trim() : "";
-                    
-                    const normalizedId = normalizeVietnameseName(identifier);
-                    rawMembers.push({
-                        group: currentGroup,
-                        row: [identifier, className],
-                        identifier: identifier,
-                        normalizedId: normalizedId,
-                        nameValue: identifier,
-                        classValue: className
-                    });
                 }
             }
-            
+
+            // ===== KIỂM TRA LẠI SAU KHI THỬ CÁCH 2 =====
+            console.log("📊 Tổng số thành viên sau khi thử lại:", rawMembers.length);
+
             if (rawMembers.length === 0) {
                 return showToast("Không tìm thấy dữ liệu thành viên trong file!", "error");
             }
-            
+
+            // ===== TIẾP TỤC XỬ LÝ SO SÁNH =====
             let compareColIndex = 0;
             
             for (let idx = 0; idx < currentSession.fields.length; idx++) {
@@ -4400,6 +4488,7 @@ async function handleFileSelected(input) {
             
             console.log("Cột so sánh (chỉ số):", compareColIndex, "Tên cột:", currentSession.fields[compareColIndex]);
             
+            // ===== LẤY DANH SÁCH ĐÃ ĐIỂM DANH =====
             const presentMap = new Map();
             const snapshot = await rdb.ref('dynamic_attendance/logs/' + currentSession.code).once('value');
             if (snapshot.exists()) {
@@ -4413,21 +4502,14 @@ async function handleFileSelected(input) {
                 });
             }
             
+            // ===== PHÂN LOẠI THEO NHÓM =====
             allMembersByGroup = {};
             const presentByGroup = {};
             const absentByGroup = {};
             
             for (let member of rawMembers) {
-                let memberIdentifier = "";
-                if (colIndexes.name !== -1 && member.row[colIndexes.name]) {
-                    memberIdentifier = member.row[colIndexes.name].toString().trim();
-                } else if (member.row[1]) {
-                    memberIdentifier = member.row[1].toString().trim();
-                } else {
-                    memberIdentifier = member.row[0].toString().trim();
-                }
-                const normId = normalizeVietnameseName(memberIdentifier);
-                console.log("Thành viên trong master:", memberIdentifier, "->", normId);
+                const normId = member.normalizedId;
+                console.log("Thành viên trong master:", member.identifier, "->", normId);
                 
                 if (!allMembersByGroup[member.group]) allMembersByGroup[member.group] = [];
                 allMembersByGroup[member.group].push(member);
@@ -4441,6 +4523,7 @@ async function handleFileSelected(input) {
                 }
             }
             
+            // ===== HIỂN THỊ THỐNG KÊ =====
             const totalMembers = rawMembers.length;
             const totalPresentInMaster = Object.values(presentByGroup).reduce((sum, arr) => sum + arr.length, 0);
             const totalPresentOutsider = presentMap.size - totalPresentInMaster;
