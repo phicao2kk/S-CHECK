@@ -4745,7 +4745,7 @@ async function exportAbsentList() {
                 mergeAndSet(currentRow, 1, currentRow, maxCols, `📌 ${group.toUpperCase()}`, { size: 12, bold: true, color: { argb: 'FF3F51B5' } }, 'left');
                 currentRow++;
                 
-                const presentHeaders = ["STT", "Họ và tên", "Lớp"];
+                const presentHeaders = ["STT", ...currentSession.fields];
                 for (let c = 0; c < presentHeaders.length; c++) {
                     setCell(currentRow, c + 1, presentHeaders[c], {
                         font: { bold: true, color: { argb: 'FFFFFFFF' } },
@@ -4754,23 +4754,14 @@ async function exportAbsentList() {
                     });
                 }
                 currentRow++;
-                
+
                 for (let idx = 0; idx < matchedByGroup[group].length; idx++) {
                     const item = matchedByGroup[group][idx];
                     const member = item.member;
                     const values = member.row;
-                    let name = "";
-                    let className = "";
                     
-                    if (window.currentColIndexes && window.currentColIndexes.name !== -1) {
-                        name = values[window.currentColIndexes.name] || "";
-                        className = values[window.currentColIndexes.className] || "";
-                    } else {
-                        name = values[1] || "";
-                        className = values[2] || "";
-                    }
-                    
-                    const rowData = [idx + 1, name, className];
+                    // Lấy tất cả giá trị từ row
+                    const rowData = [idx + 1, ...values];
                     for (let c = 0; c < rowData.length; c++) {
                         setCell(currentRow, c + 1, rowData[c] !== undefined ? rowData[c] : "", {});
                     }
@@ -4803,7 +4794,7 @@ async function exportAbsentList() {
                 mergeAndSet(currentRow, 1, currentRow, maxCols, `📌 ${group.toUpperCase()}`, { size: 12, bold: true, color: { argb: 'FFE11D48' } }, 'left');
                 currentRow++;
                 
-                const absentHeaders = ["STT", "Họ và tên", "Lớp"];
+                const absentHeaders = ["STT", ...currentSession.fields];
                 for (let c = 0; c < absentHeaders.length; c++) {
                     setCell(currentRow, c + 1, absentHeaders[c], {
                         font: { bold: true, color: { argb: 'FFFFFFFF' } },
@@ -4812,30 +4803,25 @@ async function exportAbsentList() {
                     });
                 }
                 currentRow++;
+
                 for (let idx = 0; idx < absentByGroup[group].length; idx++) {
                     const m = absentByGroup[group][idx];
                     const values = m.row;
+                    
+                    // Bỏ qua dòng "Tên" và "Lớp"
                     const nameCheck = values[0] || "";
                     if (nameCheck.toLowerCase() === "tên" || nameCheck.toLowerCase() === "lớp") {
                         continue;
                     }
-                    let name = "";
-                    let className = "";
                     
-                    if (window.currentColIndexes && window.currentColIndexes.name !== -1) {
-                        name = values[window.currentColIndexes.name] || "";
-                        className = values[window.currentColIndexes.className] || "";
-                    } else {
-                        name = values[1] || "";
-                        className = values[2] || "";
-                    }
-                    
-                    const rowData = [idx + 1, name, className];
+                    // Lấy tất cả giá trị từ row
+                    const rowData = [idx + 1, ...values];
                     for (let c = 0; c < rowData.length; c++) {
                         setCell(currentRow, c + 1, rowData[c] !== undefined ? rowData[c] : "", {});
                     }
                     currentRow++;
                 }
+
                 currentRow++;
             }
         } else {
