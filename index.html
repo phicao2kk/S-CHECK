@@ -4404,9 +4404,14 @@ async function handleFileSelected(input) {
                 const normalizedId = normalizeVietnameseName(name);
                 console.log(`✅ Thành viên: "${name}" (Lớp: "${className}") -> ${normalizedId}`);
                 
+                const allValues = [];
+                for (let j = 0; j < row.length; j++) {
+                    allValues.push(row[j] !== undefined && row[j] !== null ? row[j].toString().trim() : "");
+                }
+
                 rawMembers.push({
                     group: currentGroup,
-                    row: [name, className],
+                    row: allValues,  // ✅ LƯU TẤT CẢ CỘT
                     identifier: name,
                     normalizedId: normalizedId,
                     nameValue: name,
