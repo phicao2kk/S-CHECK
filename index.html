@@ -4301,12 +4301,13 @@ async function handleFileSelected(input) {
             window.currentColIndexes = JSON.parse(JSON.stringify(colIndexes));
             console.log("✅ Cột xác định được:", colIndexes);
 
+            // ===== DANH SÁCH TỪ KHÓA BỎ QUA =====
+            const skipHeaderValues = ["tên", "lớp", "họ và tên", "phòng ban", "stt", "số thứ tự", "đối soát", "tổng", "tổng cộng"];
+
             // ===== ĐỌC DỮ LIỆU =====
             const groupKeywords = ["nhóm", "tổ", "đội", "team", "group", "phòng", "ban"];
             let currentGroup = "DANH SÁCH CHÍNH"; // Nhóm mặc định
-            let defaultHeaders = headerRow; // Header mặc định
             let rawMembers = [];
-            let foundAnyData = false;
 
             console.log("📌 Bắt đầu đọc dữ liệu từ dòng 1...");
 
@@ -4331,24 +4332,21 @@ async function handleFileSelected(input) {
                     // Lấy header của nhóm nếu có
                     if (i + 1 < rows.length && rows[i + 1]) {
                         const nextRow = rows[i + 1];
-                        // Kiểm tra nếu dòng tiếp theo là header (chứa từ khóa tên/lớp)
                         const nextFirst = (nextRow[0] || "").toString().toLowerCase().trim();
                         const isHeader = nextFirst.includes("tên") || nextFirst.includes("họ") || 
                                         nextFirst.includes("lớp") || nextFirst.includes("phòng") ||
                                         nextFirst.includes("stt");
                         if (isHeader) {
-                            defaultHeaders = nextRow;
                             i++; // Bỏ qua dòng header
-                            console.log("📌 Header nhóm:", defaultHeaders);
+                            console.log("📌 Header nhóm:", nextRow);
                         }
                     }
                     continue;
                 }
 
                 // ===== BỎ QUA DÒNG RÁC =====
-                const skipRubbish = ["stt", "số thứ tự", "họ và tên", "lớp", "phòng ban", "đối soát", "tổng", "tổng cộng"];
                 let isRubbish = false;
-                for (let kw of skipRubbish) {
+                for (let kw of skipHeaderValues) {
                     if (firstCell === kw || firstCell.includes(kw)) {
                         isRubbish = true;
                         break;
@@ -4383,15 +4381,27 @@ async function handleFileSelected(input) {
                     continue;
                 }
                 
-                // Bỏ qua nếu tên là số hoặc quá ngắn (trừ trường hợp số là tên hợp lệ)
+                // KIỂM TRA TÊN CÓ PHẢI LÀ HEADER KHÔNG
+                const lowerName = name.toLowerCase();
+                let isHeaderValue = false;
+                for (let kw of skipHeaderValues) {
+                    if (lowerName === kw || lowerName.includes(kw)) {
+                        isHeaderValue = true;
+                        break;
+                    }
+                }
+                if (isHeaderValue) {
+                    console.log("⏭️ Bỏ qua giá trị header trong dữ liệu:", name);
+                    continue;
+                }
+                
+                // Bỏ qua nếu tên là số hoặc quá ngắn
                 if (!isNaN(name) && name.length < 3) {
                     console.log("⏭️ Bỏ qua tên số:", name);
                     continue;
                 }
 
-                foundAnyData = true;
                 const normalizedId = normalizeVietnameseName(name);
-                
                 console.log(`✅ Thành viên: "${name}" (Lớp: "${className}") -> ${normalizedId}`);
                 
                 rawMembers.push({
@@ -4409,63 +4419,60 @@ async function handleFileSelected(input) {
             console.log("📊 Tổng số thành viên tìm thấy:", rawMembers.length);
 
             if (rawMembers.length === 0) {
-    console.log("🔄 Thử đọc lại với header mặc định...");
-    
-    // Tìm dòng header thực sự
-    let realHeaderRow = null;
-    let headerIndex = -1;
-    for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row) continue;
-        const first = (row[0] || "").toString().toLowerCase().trim();
-        // Kiểm tra đây là header chứ không phải dữ liệu
-        if (first.includes("họ") || first.includes("tên") || first.includes("name") ||
-            first.includes("mssv") || first.includes("stt") || first.includes("lớp")) {
-            realHeaderRow = row;
-            headerIndex = i;
-            break;
-        }
-    }
-    
-    if (realHeaderRow) {
-        console.log("📌 Tìm thấy header thực:", realHeaderRow);
-        // Đọc từ dòng sau header, BỎ QUA DÒNG "Tên" và "Lớp"
-        for (let i = headerIndex + 1; i < rows.length; i++) {
-            const row = rows[i];
-            if (!row || row.length === 0 || row.every(cell => cell === "")) continue;
-            
-            let name = (row[0] !== undefined && row[0] !== null) ? row[0].toString().trim() : "";
-            let className = (row[1] !== undefined && row[1] !== null) ? row[1].toString().trim() : "";
-            
-            // ===== BỎ QUA DÒNG RÁC =====
-            const lowerName = name.toLowerCase();
-            const skipWords = ["stt", "số thứ tự", "họ và tên", "lớp", "phòng ban", "tên", "đối soát", "tổng"];
-            let isSkip = false;
-            for (let kw of skipWords) {
-                if (lowerName === kw || lowerName.includes(kw)) {
-                    isSkip = true;
-                    break;
+                console.log("🔄 Thử đọc lại với header mặc định...");
+                
+                // Tìm dòng header thực sự
+                let realHeaderRow = null;
+                let headerIndex = -1;
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row) continue;
+                    const first = (row[0] || "").toString().toLowerCase().trim();
+                    if (first.includes("họ") || first.includes("tên") || first.includes("name") ||
+                        first.includes("mssv") || first.includes("stt") || first.includes("lớp")) {
+                        realHeaderRow = row;
+                        headerIndex = i;
+                        break;
+                    }
+                }
+                
+                if (realHeaderRow) {
+                    console.log("📌 Tìm thấy header thực:", realHeaderRow);
+                    for (let i = headerIndex + 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (!row || row.length === 0 || row.every(cell => cell === "")) continue;
+                        
+                        let name = (row[0] !== undefined && row[0] !== null) ? row[0].toString().trim() : "";
+                        let className = (row[1] !== undefined && row[1] !== null) ? row[1].toString().trim() : "";
+                        
+                        // ===== BỎ QUA DÒNG RÁC =====
+                        const lowerName = name.toLowerCase();
+                        let isSkip = false;
+                        for (let kw of skipHeaderValues) {
+                            if (lowerName === kw || lowerName.includes(kw)) {
+                                isSkip = true;
+                                break;
+                            }
+                        }
+                        if (isSkip) {
+                            console.log("⏭️ Bỏ qua dòng header trong fallback:", name);
+                            continue;
+                        }
+                        
+                        if (name === "" || (!isNaN(name) && name.length < 3)) continue;
+                        
+                        const normalizedId = normalizeVietnameseName(name);
+                        rawMembers.push({
+                            group: "DANH SÁCH CHÍNH",
+                            row: [name, className],
+                            identifier: name,
+                            normalizedId: normalizedId,
+                            nameValue: name,
+                            classValue: className
+                        });
+                    }
                 }
             }
-            if (isSkip) {
-                console.log("⏭️ Bỏ qua dòng header trong fallback:", name);
-                continue;
-            }
-            
-            if (name === "" || (!isNaN(name) && name.length < 3)) continue;
-            
-            const normalizedId = normalizeVietnameseName(name);
-            rawMembers.push({
-                group: "DANH SÁCH CHÍNH",
-                row: [name, className],
-                identifier: name,
-                normalizedId: normalizedId,
-                nameValue: name,
-                classValue: className
-            });
-        }
-    }
-}
 
             // ===== KIỂM TRA LẠI SAU KHI THỬ CÁCH 2 =====
             console.log("📊 Tổng số thành viên sau khi thử lại:", rawMembers.length);
