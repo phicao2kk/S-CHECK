@@ -1479,7 +1479,7 @@ input[type="number"] {
                 <h2 id="report-title" class="text-3xl font-black italic uppercase tracking-tighter">Báo cáo</h2>
                 <!-- 🟡 THÊM BADGE MỨC ĐỘ TRÊN BÁO CÁO -->
                 <span id="report-importance-badge" class="hidden px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
-                    <i class="fa-solid fa-star text-[8px]"></i> QUAN TRỌNG
+                    <i class="fa-solid fa-star text-[8px]"></i> RẤT QUAN TRỌNG
                 </span>
             </div>
             
@@ -3033,7 +3033,7 @@ function renderHistoryItems(items) {
         if (isImportant) {
             importanceBadge = `
                 <span class="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1">
-                    <i class="fa-solid fa-star text-[8px]"></i> QUAN TRỌNG
+                    <i class="fa-solid fa-star text-[8px]"></i> RẤT QUAN TRỌNG
                 </span>
             `;
         } else {
@@ -3043,6 +3043,12 @@ function renderHistoryItems(items) {
                 </span>
             `;
         }
+
+        // 🟡 THÊM DÒNG NÀY: Hiển thị "Mức độ quan trọng:" trước badge
+        importanceBadge = `
+            <span class="text-[8px] text-slate-500 font-bold uppercase tracking-wider">Mức độ quan trọng:</span>
+            ${importanceBadge}
+        `;
         
         return `
         <div class="history-item glass p-4 lg:p-5 rounded-2xl border border-white/5 hover:border-indigo-500/20 transition-all group mb-2">
@@ -5696,7 +5702,7 @@ function selectImportanceOption(level) {
     } else {
         importantOpt.classList.add('selected-important');
         document.getElementById('btn-confirm-importance').innerHTML = 
-            '<i class="fa-regular fa-check-circle mr-2"></i> XÁC NHẬN & KÍCH HOẠT (QUAN TRỌNG)';
+            '<i class="fa-regular fa-check-circle mr-2"></i> XÁC NHẬN & KÍCH HOẠT (RẤT QUAN TRỌNG)';
     }
 }
 
@@ -5873,11 +5879,11 @@ function showImportanceResultNotice(importance) {
         badge.textContent = 'THƯỜNG';
     } else {
         icon.className = 'fa-solid fa-star text-5xl text-amber-400';
-        title.textContent = '⭐ MỨC ĐỘ QUAN TRỌNG';
+        title.textContent = '⭐ MỨC ĐỘ RẤT QUAN TRỌNG';
         desc.innerHTML = 'Dữ liệu điểm danh sẽ được <span class="text-amber-400 font-bold">lưu trữ 365 ngày</span> trước khi tự động xóa.';
         sub.textContent = 'Lưu trữ dài hạn 365 ngày';
         badge.className = 'px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30';
-        badge.textContent = '⭐ QUAN TRỌNG';
+        badge.textContent = '⭐ RẤT QUAN TRỌNG';
     }
     
     modal.classList.remove('hidden');
@@ -6920,7 +6926,7 @@ window.resetEventForm = function() {
                 <div class="option-icon w-12 h-12 lg:w-14 lg:h-14 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
                     <i class="fa-solid fa-star text-xl lg:text-2xl text-amber-400"></i>
                 </div>
-                <h4 class="option-title text-base lg:text-lg font-black uppercase text-amber-400 tracking-wider">QUAN TRỌNG</h4>
+                <h4 class="option-title text-base lg:text-lg font-black uppercase text-amber-400 tracking-wider">RẤT QUAN TRỌNG</h4>
                 <p class="option-days text-xs lg:text-sm font-bold text-slate-300 uppercase mt-1">365 ngày tự xóa</p>
                 <div class="option-desc text-[10px] lg:text-xs text-slate-400 font-semibold leading-relaxed mt-2">
                     Dữ liệu sẽ tự động xóa sau 365 ngày
