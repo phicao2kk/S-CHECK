@@ -29,6 +29,7 @@
 
     <style>
 
+
 /* Khi dấu chấm chuyển sang trạng thái khóa */
 .dot-signal.is-locked {
     background-color: transparent !important;
@@ -934,6 +935,134 @@ input[type="number"] {
     text-align: center !important;
 }
 
+/* ===== 🟡 THÊM MỚI: CSS CHO MODAL CHỌN MỨC ĐỘ QUAN TRỌNG ===== */
+.importance-select-modal {
+    background: rgba(15, 23, 42, 0.95) !important;
+    backdrop-filter: blur(30px) !important;
+    border: 2px solid rgba(245, 158, 11, 0.2) !important;
+    box-shadow: 0 0 80px rgba(245, 158, 11, 0.1) !important;
+}
+.importance-option {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    border: 2px solid rgba(255, 255, 255, 0.05);
+}
+.importance-option:hover {
+    transform: translateY(-4px);
+    border-color: rgba(245, 158, 11, 0.3);
+}
+.importance-option.selected-normal {
+    border-color: #3b82f6 !important;
+    background: rgba(59, 130, 246, 0.1) !important;
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.1) !important;
+}
+.importance-option.selected-important {
+    border-color: #f59e0b !important;
+    background: rgba(245, 158, 11, 0.1) !important;
+    box-shadow: 0 0 40px rgba(245, 158, 11, 0.1) !important;
+}
+.importance-option:active {
+    transform: scale(0.95) !important;
+}
+
+/* 🟡 RESPONSIVE - KÍCH THƯỚC CHỮ VỪA PHẢI */
+.importance-option .option-icon {
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 22px !important;
+}
+.importance-option .option-title {
+    font-size: clamp(14px, 2vw, 18px) !important;
+    font-weight: 900 !important;
+    letter-spacing: 1.5px !important;
+}
+.importance-option .option-days {
+    font-size: clamp(11px, 1.4vw, 14px) !important;
+    font-weight: 800 !important;
+    margin-top: 4px !important;
+}
+.importance-option .option-desc {
+    font-size: clamp(10px, 1.2vw, 13px) !important;
+    font-weight: 600 !important;
+    margin-top: 6px !important;
+    line-height: 1.4 !important;
+}
+
+/* Responsive cho modal kết quả */
+.result-modal-title {
+    font-size: clamp(20px, 3vw, 28px) !important;
+}
+.result-modal-desc {
+    font-size: clamp(13px, 1.5vw, 16px) !important;
+}
+.result-modal-badge {
+    font-size: clamp(10px, 1.2vw, 13px) !important;
+}
+.result-modal-sub {
+    font-size: clamp(9px, 1vw, 12px) !important;
+}
+
+/* ===== 🟡 CSS CHO DỌN DẸP TRONG LỊCH SỬ ===== */
+#cleanup-log-container::-webkit-scrollbar {
+    width: 3px;
+}
+#cleanup-log-container::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.3);
+    border-radius: 10px;
+}
+.cleanup-log-item {
+    font-size: 8px;
+    color: #94a3b8;
+    padding: 2px 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    display: flex;
+    gap: 8px;
+    font-family: monospace;
+}
+.cleanup-log-item .time {
+    color: #475569;
+    min-width: 65px;
+}
+.cleanup-log-item .msg {
+    color: #94a3b8;
+}
+.cleanup-log-item .msg.deleted {
+    color: #f87171;
+}
+.cleanup-log-item .msg.success {
+    color: #34d399;
+}
+
+/* 🟡 HIỆU ỨNG HOVER CHO NÚT */
+#history-modal button {
+    transition: all 0.2s ease !important;
+}
+#history-modal button:active {
+    transform: scale(0.92) !important;
+}
+
+/* 🟡 TOOLTIP CHO NÚT DỌN DẸP */
+.cleanup-tooltip {
+    position: relative;
+}
+.cleanup-tooltip:hover::after {
+    content: "Tự động xóa các sự kiện đã hết hạn (30/365 ngày)";
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: #94a3b8;
+    font-size: 8px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    white-space: nowrap;
+    border: 1px solid rgba(255,255,255,0.05);
+    z-index: 20;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+}
+
     </style>
 </head>
 <body>
@@ -1348,6 +1477,10 @@ input[type="number"] {
                     <span class="text-[9px] font-black text-indigo-400 uppercase tracking-[4px] italic animate-pulse">Bạn đang xem lịch sử</span>
                 </div>
                 <h2 id="report-title" class="text-3xl font-black italic uppercase tracking-tighter">Báo cáo</h2>
+                <!-- 🟡 THÊM BADGE MỨC ĐỘ TRÊN BÁO CÁO -->
+                <span id="report-importance-badge" class="hidden px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+                    <i class="fa-solid fa-star text-[8px]"></i> QUAN TRỌNG
+                </span>
             </div>
             
             <div class="flex flex-wrap gap-3 justify-end items-center">
@@ -2863,16 +2996,76 @@ function renderHistoryItems(items) {
     listContainer.innerHTML = items.map(item => {
         const fieldsBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(item.fields))));
         
+        const importance = item.importance || 'normal';
+        const isImportant = importance === 'important';
+        
+        // 🟡 TÍNH THỜI GIAN CÒN LẠI
+        let remainingText = '';
+        let remainingClass = '';
+        
+        if (item.expiryTime) {
+            const now = Date.now();
+            const remainingMs = item.expiryTime - now;
+            const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+            
+            if (remainingDays > 0) {
+                remainingText = `Còn ${remainingDays} ngày`;
+                if (remainingDays <= 7) {
+                    remainingClass = 'text-red-400 font-bold';
+                } else if (remainingDays <= 30) {
+                    remainingClass = 'text-amber-400 font-bold';
+                } else {
+                    remainingClass = 'text-emerald-400 font-bold';
+                }
+            } else {
+                remainingText = '⚠️ Đã hết hạn';
+                remainingClass = 'text-red-500 font-bold';
+            }
+        } else {
+            // Fallback nếu không có expiryTime
+            const deleteDays = isImportant ? 365 : 30;
+            remainingText = `Xóa sau ${deleteDays} ngày`;
+            remainingClass = 'text-slate-400';
+        }
+        
+        // 🟡 Tạo badge hiển thị mức độ
+        let importanceBadge = '';
+        if (isImportant) {
+            importanceBadge = `
+                <span class="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                    <i class="fa-solid fa-star text-[8px]"></i> QUAN TRỌNG
+                </span>
+            `;
+        } else {
+            importanceBadge = `
+                <span class="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center gap-1">
+                    <i class="fa-regular fa-clock text-[8px]"></i> THƯỜNG
+                </span>
+            `;
+        }
+        
         return `
         <div class="history-item glass p-4 lg:p-5 rounded-2xl border border-white/5 hover:border-indigo-500/20 transition-all group mb-2">
             <div class="flex flex-col gap-4">
                 <div class="space-y-1">
-                    <h4 class="font-black text-[13px] lg:text-sm text-white uppercase group-hover:text-indigo-400 transition-colors tracking-tight truncate">
-                        ${item.title}
-                    </h4>
-                    <div class="flex items-center gap-2 text-slate-500">
-                        <i class="fa-regular fa-clock text-[9px]"></i>
-                        <p class="text-[9px] font-bold uppercase">${new Date(item.ts).toLocaleString('vi-VN')}</p>
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <h4 class="font-black text-[13px] lg:text-sm text-white uppercase group-hover:text-indigo-400 transition-colors tracking-tight truncate flex-1">
+                            ${item.title}
+                        </h4>
+                        <div class="flex items-center gap-2 shrink-0">
+                            ${importanceBadge}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 text-slate-500 flex-wrap">
+                        <div class="flex items-center gap-1.5">
+                            <i class="fa-regular fa-clock text-[9px]"></i>
+                            <p class="text-[9px] font-bold uppercase">${new Date(item.ts).toLocaleString('vi-VN')}</p>
+                        </div>
+                        <span class="w-[1px] h-3 bg-white/10"></span>
+                        <div class="flex items-center gap-1.5">
+                            <i class="fa-regular fa-calendar text-[9px]"></i>
+                            <p class="text-[8px] font-medium ${remainingClass}">${remainingText}</p>
+                        </div>
                     </div>
                 </div>
 
@@ -3091,7 +3284,6 @@ function resetEventForm() {
     document.getElementById('a-title').value = "";
     document.getElementById('admin-fields-list').innerHTML = "";
     
-    addField("Nhóm");
     addField("Họ và Tên"); 
     addField("Lớp / Phòng ban");
     
@@ -5466,20 +5658,582 @@ function restoreTimeStateFromFirebase(code) {
 // Hàm toggle để bật/tắt hàm giới hạn thời gian (nếu cần)
 // Không dùng nữa, tích hợp trực tiếp vào UI
 
+// ===== 🟡 THÊM MỚI: HÀM CHỌN MỨC ĐỘ QUAN TRỌNG =====
+
+let selectedImportance = 'normal'; // Mặc định
+
+// Mở modal chọn mức độ
+function openImportanceSelectModal() {
+    const modal = document.getElementById('importance-select-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    // Reset về mặc định
+    selectImportanceOption('normal');
+}
+
+// Đóng modal
+function closeImportanceSelectModal() {
+    const modal = document.getElementById('importance-select-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// Chọn option
+function selectImportanceOption(level) {
+    selectedImportance = level;
+    
+    const normalOpt = document.getElementById('importance-option-normal');
+    const importantOpt = document.getElementById('importance-option-important');
+    
+    // Reset all
+    normalOpt.classList.remove('selected-normal');
+    importantOpt.classList.remove('selected-important');
+    
+    if (level === 'normal') {
+        normalOpt.classList.add('selected-normal');
+        document.getElementById('btn-confirm-importance').innerHTML = 
+            '<i class="fa-regular fa-check-circle mr-2"></i> XÁC NHẬN & KÍCH HOẠT (THƯỜNG)';
+    } else {
+        importantOpt.classList.add('selected-important');
+        document.getElementById('btn-confirm-importance').innerHTML = 
+            '<i class="fa-regular fa-check-circle mr-2"></i> XÁC NHẬN & KÍCH HOẠT (QUAN TRỌNG)';
+    }
+}
+
+// Xác nhận và kích hoạt
+async function confirmImportance() {
+    const btn = document.getElementById('btn-confirm-importance');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin mr-2"></i> ĐANG KÍCH HOẠT...';
+    
+    try {
+        // Gọi hàm activateSession với mức độ đã chọn
+        await activateSessionWithImportance(selectedImportance);
+        closeImportanceSelectModal();
+    } catch (e) {
+        console.error(e);
+        showToast('Lỗi kích hoạt: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-regular fa-check-circle mr-2"></i> XÁC NHẬN & KÍCH HOẠT';
+    }
+}
+
+// Hàm activateSession có tham số importance
+async function activateSessionWithImportance(importance) {
+    const radiusCheck = parseInt(document.getElementById('a-location-radius').value);
+    pendingRadius = (isNaN(radiusCheck) || radiusCheck < 50) ? 50 : radiusCheck;
+    const user = auth.currentUser;
+    if (!user) return showToast("Bạn chưa đăng nhập!", "error");
+
+    const title = document.getElementById('a-title').value.trim();
+    const fields = Array.from(document.querySelectorAll('.field-input')).map(i => i.value.trim()).filter(v => v);
+    const isGpsRequired = document.getElementById('a-require-location').checked;
+
+    if(!title) return showToast("Vui lòng nhập tên sự kiện!", "info");
+    
+    const code = createSlug(title); 
+    showToast("Đang kích hoạt hệ thống...", "info");
+
+    try {
+        const sessionData = { 
+            code: code, 
+            title: title, 
+            fields: fields, 
+            requireLocation: document.getElementById('a-require-location').checked,
+            locationRadius: pendingRadius,
+            ts: Date.now(),
+            ownerId: user.uid,
+            importance: importance, // 🟡 Lưu mức độ quan trọng
+            timeLimit: {
+                remainingSeconds: 0,
+                totalSeconds: 0,
+                isRunning: false,
+                isPaused: false,
+                isUnlocked: true,
+                startTime: null,
+                pausedAt: null,
+                updatedAt: Date.now()
+            }
+        }; 
+        
+        if (isMultiScanMode && user.email.replace('@scheck.pro', '') === MASTER_PHONE) {
+            sessionData.allowMultiple = true;
+        } else {
+            sessionData.allowMultiple = false;
+        }
+
+        await rdb.ref('dynamic_attendance/sessions/' + code).set(sessionData);
+        await rdb.ref('dynamic_attendance/users/' + user.uid + '/my_sessions/' + code).set(true);
+
+        currentSession = sessionData;
+        currentImportance = importance; // Lưu global
+        timeLimit.code = code;
+        
+        resetTimeLimitState();
+        timeLimit.isUnlocked = true;
+        updateTimeUI();
+
+        fraudData = [];
+        try {
+            localStorage.setItem('scheck_fraud_data', JSON.stringify(fraudData));
+        } catch (e) {}
+        updateFraudBadge();
+        updateFraudUI();
+
+        setupFraudListener(code);
+
+        if (isGpsRequired && adminDeviceType === 'pc') {
+            const anchorUrl = window.location.origin + window.location.pathname + "?anchor=" + code;
+            document.getElementById('anchor-qr-box').innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(anchorUrl)}" style="border-radius:15px;">`;
+            document.getElementById('anchor-qr-modal').classList.remove('hidden');
+
+            rdb.ref('dynamic_attendance/sessions/' + code + '/adminLocation').on('value', snap => {
+                if (snap.exists()) {
+                    document.getElementById('anchor-qr-modal').classList.add('hidden');
+                    showToast("TÍN HIỆU GPS: ĐÃ SẴN SÀNG", "success");
+                    finishActivationWithImportance(code, title, importance);
+                    rdb.ref('dynamic_attendance/sessions/' + code + '/adminLocation').off();
+                }
+            });
+        } else {
+            finishActivationWithImportance(code, title, importance);
+            showToast("Kích hoạt thành công!", "success");
+        }
+
+    } catch (e) {
+        console.error(e);
+        if (e.message.includes("PERMISSION_DENIED")) {
+            showToast("Lỗi: Server từ chối quyền truy cập (Rules chưa đúng)", "error");
+        } else {
+            showToast("Lỗi hệ thống: " + e.message, "error");
+        }
+    }
+}
+
+// Hàm finishActivation có tham số importance
+function finishActivationWithImportance(code, title, importance) {
+    // Gọi hàm finishActivation gốc
+    if (typeof originalFinishActivation === 'function') {
+        originalFinishActivation(code, title);
+    } else {
+        // Fallback nếu chưa định nghĩa
+        toggleAdminFormLock(true);
+        document.getElementById('report-title').innerText = title;
+        
+        let roomUrl = window.location.origin + window.location.pathname + "?room=" + code;
+        lastQRUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(roomUrl)}`;
+        
+        document.getElementById('qr-container').classList.remove('hidden');
+        document.getElementById('qr-code').innerHTML = `
+            <div class="bg-white p-4 rounded-[2rem] flex flex-col items-center">
+                <img src="${lastQRUrl}" class="w-48 h-48 rounded-xl shadow-inner">
+                <div class="mt-4 text-center">
+                    <h4 class="text-black text-xl font-black italic uppercase tracking-tighter">QUÉT MÃ ĐIỂM DANH</h4>
+                    <p class="text-slate-400 text-[7px] font-bold uppercase tracking-[3px] mt-1.5">S-CHECK PRO SYSTEM</p>
+                </div>
+            </div>`;
+        
+        listenLogs(code);
+
+        const btn = document.getElementById('btn-session-action');
+        btn.innerText = "Tạo sự kiện mới";
+        btn.onclick = resetEventForm;
+        btn.style.background = "linear-gradient(135deg, #10b981, #3b82f6)";
+        
+        timeLimit.code = code;
+        timeLimit.isUnlocked = true;
+        updateTimeUI();
+    }
+    
+    // 🟡 HIỂN THỊ MODAL THÔNG BÁO MỨC ĐỘ (SAU KHI KÍCH HOẠT)
+    setTimeout(() => {
+        showImportanceResultNotice(importance);
+    }, 600);
+    
+    // Lên lịch tự động xóa
+    autoCleanupSession(code, importance);
+}
+
+// Hiển thị thông báo kết quả mức độ (modal vàng)
+function showImportanceResultNotice(importance) {
+    const modal = document.getElementById('importance-result-modal');
+    const icon = document.getElementById('result-modal-icon');
+    const title = document.getElementById('result-modal-title');
+    const desc = document.getElementById('result-modal-desc');
+    const sub = document.getElementById('result-modal-sub');
+    const badge = document.getElementById('result-modal-badge');
+    
+    if (importance === 'normal') {
+        icon.className = 'fa-regular fa-clock text-5xl text-blue-400';
+        title.textContent = 'MỨC ĐỘ THƯỜNG';
+        desc.innerHTML = 'Dữ liệu điểm danh sẽ được <span class="text-blue-400 font-bold">tự động xóa sau 30 ngày</span> để giải phóng dung lượng.';
+        sub.textContent = 'Tự động xóa sau 30 ngày';
+        badge.className = 'px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30';
+        badge.textContent = 'THƯỜNG';
+    } else {
+        icon.className = 'fa-solid fa-star text-5xl text-amber-400';
+        title.textContent = '⭐ MỨC ĐỘ QUAN TRỌNG';
+        desc.innerHTML = 'Dữ liệu điểm danh sẽ được <span class="text-amber-400 font-bold">lưu trữ 365 ngày</span> trước khi tự động xóa.';
+        sub.textContent = 'Lưu trữ dài hạn 365 ngày';
+        badge.className = 'px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30';
+        badge.textContent = '⭐ QUAN TRỌNG';
+    }
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+// Đóng modal kết quả
+function closeImportanceResultModal() {
+    const modal = document.getElementById('importance-result-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// Lấy thông tin tự động xóa
+function getAutoDeleteInfo(importance) {
+    if (importance === 'important') {
+        return { days: 365, text: '365 ngày' };
+    }
+    return { days: 30, text: '30 ngày' };
+}
+
+// Lên lịch tự động xóa
+async function autoCleanupSession(code, importance) {
+    if (!code) return;
+    const info = getAutoDeleteInfo(importance);
+    const expiryTime = Date.now() + (info.days * 24 * 60 * 60 * 1000);
+    await rdb.ref('dynamic_attendance/sessions/' + code + '/expiryTime').set(expiryTime);
+    await rdb.ref('dynamic_attendance/sessions/' + code + '/autoDeleteDays').set(info.days);
+}
+
+// Kiểm tra và xóa session hết hạn
+async function checkAndCleanExpiredSessions() {
+    try {
+        const now = Date.now();
+        const snap = await rdb.ref('dynamic_attendance/sessions')
+            .orderByChild('expiryTime')
+            .endAt(now)
+            .once('value');
+        
+        if (snap.exists()) {
+            const expiredSessions = snap.val();
+            const updates = {};
+            for (const code in expiredSessions) {
+                const session = expiredSessions[code];
+                if (session.expiryTime && session.expiryTime <= now) {
+                    console.log(`🗑️ Tự động xóa session: ${code}`);
+                    updates[`dynamic_attendance/logs/${code}`] = null;
+                    updates[`dynamic_attendance/sessions/${code}`] = null;
+                    updates[`fraud/${code}`] = null;
+                }
+            }
+            if (Object.keys(updates).length > 0) {
+                await rdb.ref().update(updates);
+            }
+        }
+    } catch (e) {
+        console.warn('Lỗi kiểm tra session hết hạn:', e);
+    }
+}
+
+// ===== GHI ĐÈ HÀM activateSession GỐC =====
+const originalActivate = window.activateSession;
+window.activateSession = function() {
+    // 🟡 Mở modal chọn mức độ thay vì kích hoạt trực tiếp
+    openImportanceSelectModal();
+};
+
+// ===== KHỞI TẠO =====
+setInterval(checkAndCleanExpiredSessions, 6 * 60 * 60 * 1000);
+setTimeout(checkAndCleanExpiredSessions, 5000);
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Không cần set mặc định gì cả
+});
+
+// ===== 🟡 TỰ ĐỘNG DỌN DẸP QUA RENDER =====
+
+const CLEANUP_API_URL = 'https://scheck-cleanup-server.onrender.com';
+
+let cleanupLogs = [];
+let cleanupStats = {
+    totalDeleted: 0,
+    lastRun: null,
+    autoCleanupEnabled: true
+};
+
+// ===== HÀM GỌI API DỌN DẸP =====
+async function autoCleanup() {
+    if (!cleanupStats.autoCleanupEnabled) {
+        console.log('⏸️ Tự động dọn dẹp đã tắt');
+        return;
+    }
+    
+    console.log('🔄 Tự động gọi server dọn dẹp...');
+    
+    try {
+        const response = await fetch(`${CLEANUP_API_URL}/cleanup?secret=YOUR_SECRET_KEY`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            const deleted = data.deletedCount || 0;
+            cleanupStats.totalDeleted += deleted;
+            cleanupStats.lastRun = new Date().toLocaleString('vi-VN');
+            
+            if (deleted > 0) {
+                addCleanupLog(`🗑️ Server tự động xóa ${deleted} session hết hạn`);
+                // Refresh danh sách lịch sử nếu đang mở
+                const modal = document.getElementById('history-modal');
+                if (modal && modal.classList.contains('flex')) {
+                    setTimeout(() => showHistory(), 500);
+                }
+            } else {
+                addCleanupLog('✅ Không có session hết hạn');
+            }
+            
+            // Lưu thống kê
+            try {
+                localStorage.setItem('scheck_cleanup_stats', JSON.stringify(cleanupStats));
+            } catch (e) {}
+            
+            // Cập nhật UI
+            updateCleanupUI();
+            
+            console.log(`✅ Tự động dọn dẹp hoàn tất: ${deleted} session`);
+        } else {
+            throw new Error(data.error || 'Lỗi không xác định');
+        }
+    } catch (e) {
+        console.error('❌ Lỗi tự động dọn dẹp:', e);
+        addCleanupLog(`⚠️ Lỗi kết nối server: ${e.message}`);
+    }
+}
+
+// ===== KIỂM TRA SERVER =====
+async function checkCleanupServer() {
+    try {
+        const response = await fetch(`${CLEANUP_API_URL}/health`);
+        if (response.ok) {
+            console.log('✅ Server dọn dẹp sẵn sàng');
+            return true;
+        }
+        return false;
+    } catch (e) {
+        console.warn('⚠️ Server dọn dẹp không khả dụng');
+        return false;
+    }
+}
+
+// ===== THÊM LOG =====
+function addCleanupLog(message) {
+    cleanupLogs.unshift({
+        time: new Date().toLocaleString('vi-VN'),
+        message: message
+    });
+    if (cleanupLogs.length > 100) {
+        cleanupLogs = cleanupLogs.slice(0, 100);
+    }
+    try {
+        localStorage.setItem('scheck_cleanup_logs', JSON.stringify(cleanupLogs));
+    } catch (e) {}
+}
+
+// ===== CẬP NHẬT UI =====
+function updateCleanupUI() {
+    const badge = document.getElementById('history-cleanup-badge');
+    const countEl = document.getElementById('history-cleanup-count');
+    const timeEl = document.getElementById('history-cleanup-time');
+    const statusEl = document.getElementById('history-server-status');
+    
+    if (badge) badge.textContent = cleanupStats.totalDeleted;
+    if (countEl) countEl.textContent = cleanupStats.totalDeleted;
+    if (timeEl) {
+        timeEl.textContent = cleanupStats.lastRun 
+            ? `🕐 ${cleanupStats.lastRun}` 
+            : '⏳ Chưa chạy';
+    }
+    if (statusEl) {
+        statusEl.textContent = '● Tự động (mỗi 6 giờ)';
+        statusEl.className = 'text-[8px] text-emerald-400/80';
+    }
+}
+
+// ===== TẢI DỮ LIỆU TỪ LOCALSTORAGE =====
+function loadCleanupData() {
+    try {
+        const savedLogs = localStorage.getItem('scheck_cleanup_logs');
+        if (savedLogs) {
+            cleanupLogs = JSON.parse(savedLogs);
+        }
+        
+        const savedStats = localStorage.getItem('scheck_cleanup_stats');
+        if (savedStats) {
+            cleanupStats = JSON.parse(savedStats);
+        }
+    } catch (e) {}
+    
+    updateCleanupUI();
+}
+
+// ===== NÚT DỌN DẸP THỦ CÔNG (BẤM VÀO LỊCH SỬ) =====
+async function manualCleanup() {
+    const btn = document.querySelector('#history-modal button[onclick="manualCleanup()"]');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> <span>Đang gọi server...</span>';
+    }
+    
+    await autoCleanup();
+    
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `
+            <i class="fa-solid fa-broom"></i>
+            <span>Dọn dẹp</span>
+            <span id="history-cleanup-badge" class="bg-emerald-500/20 px-1.5 py-0.5 rounded text-[7px] text-emerald-300">${cleanupStats.totalDeleted}</span>
+        `;
+    }
+}
+
+// ===== XEM LOG DỌN DẸP =====
+function viewCleanupLogs() {
+    const container = document.getElementById('cleanup-log-container');
+    const list = document.getElementById('cleanup-log-list');
+    
+    if (!container || !list) return;
+    
+    if (container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+        
+        if (cleanupLogs.length === 0) {
+            list.innerHTML = '<div class="text-center text-slate-500 text-[8px] py-2">📭 Chưa có hoạt động dọn dẹp nào</div>';
+        } else {
+            list.innerHTML = cleanupLogs.map(log => {
+                const isDeleted = log.message.includes('🗑️');
+                return `<div class="cleanup-log-item">
+                    <span class="time">${log.time}</span>
+                    <span class="msg ${isDeleted ? 'deleted' : 'success'}">${log.message}</span>
+                </div>`;
+            }).join('');
+        }
+        
+        showToast('📋 Đã mở log dọn dẹp', 'info');
+    } else {
+        container.classList.add('hidden');
+    }
+}
+
+// ===== LÊN LỊCH TỰ ĐỘNG =====
+
+// 1. Chạy lần đầu khi load trang (sau 5 giây)
+setTimeout(async () => {
+    console.log('🔄 Khởi tạo hệ thống dọn dẹp tự động...');
+    const serverReady = await checkCleanupServer();
+    if (serverReady) {
+        await autoCleanup();
+    } else {
+        addCleanupLog('⚠️ Server dọn dẹp không khả dụng, sẽ thử lại sau');
+    }
+}, 5000);
+
+// 2. Chạy mỗi 6 giờ (tự động)
+setInterval(async () => {
+    console.log('🔄 Chạy dọn dẹp tự động (6 giờ)...');
+    await autoCleanup();
+}, 6 * 60 * 60 * 1000);
+
+// 3. Chạy khi quay lại tab (nếu > 1 giờ chưa chạy)
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && cleanupStats.lastRun) {
+        const lastRun = new Date(cleanupStats.lastRun);
+        const hoursSince = (Date.now() - lastRun.getTime()) / (60 * 60 * 1000);
+        if (hoursSince > 1) {
+            console.log('🔄 Quay lại tab, chạy dọn dẹp...');
+            autoCleanup();
+        }
+    }
+});
+
+// 4. Chạy khi có session mới được tạo
+const originalFinishActivation = window.finishActivation;
+window.finishActivation = function(code, title) {
+    if (typeof originalFinishActivation === 'function') {
+        originalFinishActivation(code, title);
+    }
+    setTimeout(() => {
+        console.log('🔄 Chạy dọn dẹp sau khi tạo session mới...');
+        autoCleanup();
+    }, 10000);
+};
+
+// ===== KHỞI TẠO =====
+document.addEventListener('DOMContentLoaded', function() {
+    loadCleanupData();
+    console.log('🧹 Hệ thống dọn dẹp tự động đã sẵn sàng');
+    console.log('⏰ Lịch chạy: Lần đầu sau 5s, sau đó mỗi 6 giờ');
+    console.log('🔗 Server URL:', CLEANUP_API_URL);
+});
+
+// Lưu khi đóng trang
+window.addEventListener('beforeunload', function() {
+    try {
+        localStorage.setItem('scheck_cleanup_stats', JSON.stringify(cleanupStats));
+    } catch (e) {}
+});
+
+
 </script>
 <!-- MODAL LỊCH SỬ SỰ KIỆN -->
 <div id="history-modal" class="fixed inset-0 z-[10004] hidden items-center justify-center bg-black/90 backdrop-blur-md p-4">
-    <div class="glass p-6 lg:p-8 rounded-[32px] max-w-2xl w-full max-h-[80vh] flex flex-col border border-white/10">
+    <div class="glass p-6 lg:p-8 rounded-[32px] max-w-3xl w-full max-h-[80vh] flex flex-col border border-white/10">
         <div class="flex justify-between items-center mb-6">
-            <h3 class="text-xl font-black uppercase italic text-indigo-400">Tất cả sự kiện</h3>
+            <div>
+                <h3 class="text-xl font-black uppercase italic text-indigo-400">📋 Tất cả sự kiện</h3>
+                <p class="text-[8px] text-slate-500 mt-0.5">Hiển thị mức độ quan trọng bên cạnh tên sự kiện</p>
+            </div>
             <div class="flex gap-2">
-                <button onclick="clearAllHistory()" class="text-[9px] font-black text-red-500 border border-red-500/40 px-3 py-2 rounded-xl hover:bg-red-600 hover:text-white transition-all uppercase">
-                    <i class="fa-solid fa-dumpster-fire mr-1"></i> Xóa hết dữ liệu
+                <!-- 🟡 NÚT DỌN DẸP - NỘI DUNG RÕ RÀNG -->
+                <button onclick="manualCleanup()" 
+                        class="flex items-center gap-1.5 text-[9px] font-black text-emerald-400 border border-emerald-500/30 px-3 py-2 rounded-xl hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all uppercase">
+                    <i class="fa-solid fa-broom"></i>
+                    <span>Dọn dẹp</span>
+                    <span id="history-cleanup-badge" class="bg-emerald-500/20 px-1.5 py-0.5 rounded text-[7px] text-emerald-300">0</span>
                 </button>
-                <button onclick="closeHistory()" class="w-8 h-8 flex items-center justify-center bg-white/5 rounded-full hover:text-red-500 transition-colors">✕</button>
+                
+                <button onclick="clearAllHistory()" 
+                        class="flex items-center gap-1.5 text-[9px] font-black text-red-400 border border-red-500/30 px-3 py-2 rounded-xl hover:bg-red-600 hover:text-white hover:border-red-600 transition-all uppercase">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>Xóa hết</span>
+                </button>
+                
+                <button onclick="closeHistory()" 
+                        class="w-8 h-8 flex items-center justify-center bg-white/5 rounded-full hover:bg-red-500/20 hover:text-red-400 transition-colors text-slate-400">
+                    ✕
+                </button>
             </div>
         </div>
-        <input type="text" id="history-search" oninput="filterHistory()" placeholder="Tìm tên sự kiện..." class="w-full p-3 mb-4 rounded-xl text-xs bg-white/5 border border-white/10">
+        
+        <!-- 🟡 THÔNG TIN DỌN DẸP -->
+        <div id="cleanup-info-bar" class="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-2 mb-3 border border-white/5">
+            <div class="flex items-center gap-3 text-[9px] text-slate-400">
+                <span>🧹 Đã xóa: <strong id="history-cleanup-count" class="text-emerald-400">0</strong> session</span>
+                <span class="w-px h-4 bg-white/10"></span>
+                <span id="history-cleanup-time" class="text-slate-500">Chưa chạy</span>
+            </div>
+            <button onclick="viewCleanupLogs()" 
+                    class="text-[8px] font-black text-slate-500 hover:text-white transition-colors uppercase flex items-center gap-1">
+                <i class="fa-solid fa-list-ul"></i> Xem log
+            </button>
+        </div>
+        
+        <!-- 🟡 LOG DỌN DẸP -->
+        <div id="cleanup-log-container" class="hidden max-h-24 overflow-y-auto mb-3 bg-black/30 rounded-xl p-2 custom-scrollbar border border-white/5">
+            <div id="cleanup-log-list" class="space-y-0.5"></div>
+        </div>
+        
+        <input type="text" id="history-search" oninput="filterHistory()" placeholder="🔍 Tìm tên sự kiện..." class="w-full p-3 mb-4 rounded-xl text-xs bg-white/5 border border-white/10 focus:border-indigo-500/50 outline-none transition-all">
         <div id="history-list" class="flex-1 overflow-y-auto space-y-3 custom-scrollbar"></div>
     </div>
 </div>
@@ -6125,6 +6879,110 @@ window.resetEventForm = function() {
     updateTimeUI();
 };
 </script>
+
+<!-- 🟡 THÊM MỚI: MODAL CHỌN MỨC ĐỘ QUAN TRỌNG (HIỆN SAU KHI KÍCH HOẠT) -->
+<div id="importance-select-modal" class="fixed inset-0 z-[13000] hidden items-center justify-center bg-black/95 backdrop-blur-2xl p-4">
+    <div class="importance-select-modal glass p-6 lg:p-8 rounded-[32px] max-w-xl w-full border border-white/10 animate-in zoom-in duration-500">
+        
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 lg:w-20 lg:h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fa-solid fa-triangle-exclamation text-2xl lg:text-3xl text-amber-400"></i>
+            </div>
+            <h3 class="text-xl lg:text-2xl font-black uppercase italic text-white tracking-tight">
+                CHỌN MỨC ĐỘ <span class="text-amber-400">QUAN TRỌNG</span>
+            </h3>
+            <p class="text-[10px] lg:text-xs text-slate-400 font-bold uppercase tracking-[2px] lg:tracking-[3px] mt-1">
+                Phân loại dữ liệu điểm danh này
+            </p>
+        </div>
+
+        <!-- 2 Lựa chọn -->
+        <div class="grid grid-cols-2 gap-3 lg:gap-4 mb-6">
+            <!-- Option 1: Thường -->
+            <div id="importance-option-normal" 
+                 onclick="selectImportanceOption('normal')"
+                 class="importance-option selected-normal p-5 lg:p-6 rounded-2xl text-center cursor-pointer border-2 border-blue-500/30 bg-blue-500/5">
+                <div class="option-icon w-12 h-12 lg:w-14 lg:h-14 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fa-regular fa-clock text-xl lg:text-2xl text-blue-400"></i>
+                </div>
+                <h4 class="option-title text-base lg:text-lg font-black uppercase text-blue-400 tracking-wider">THƯỜNG</h4>
+                <p class="option-days text-xs lg:text-sm font-bold text-slate-300 uppercase mt-1">30 ngày tự xóa</p>
+                <div class="option-desc text-[10px] lg:text-xs text-slate-400 font-semibold leading-relaxed mt-2">
+                    Dữ liệu sẽ tự động xóa sau 30 ngày
+                </div>
+            </div>
+
+            <!-- Option 2: Quan trọng -->
+            <div id="importance-option-important" 
+                 onclick="selectImportanceOption('important')"
+                 class="importance-option p-5 lg:p-6 rounded-2xl text-center cursor-pointer border-2 border-white/5 hover:border-amber-500/30">
+                <div class="option-icon w-12 h-12 lg:w-14 lg:h-14 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fa-solid fa-star text-xl lg:text-2xl text-amber-400"></i>
+                </div>
+                <h4 class="option-title text-base lg:text-lg font-black uppercase text-amber-400 tracking-wider">QUAN TRỌNG</h4>
+                <p class="option-days text-xs lg:text-sm font-bold text-slate-300 uppercase mt-1">365 ngày tự xóa</p>
+                <div class="option-desc text-[10px] lg:text-xs text-slate-400 font-semibold leading-relaxed mt-2">
+                    Dữ liệu sẽ tự động xóa sau 365 ngày
+                </div>
+            </div>
+        </div>
+
+        <!-- Nút Xác nhận -->
+        <button onclick="confirmImportance()" 
+                id="btn-confirm-importance"
+                class="w-full py-3.5 lg:py-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl text-white font-black uppercase text-xs lg:text-sm tracking-wider hover:shadow-lg hover:shadow-amber-500/30 transition-all active:scale-95">
+            <i class="fa-regular fa-check-circle mr-2 text-sm lg:text-base"></i> XÁC NHẬN & KÍCH HOẠT
+        </button>
+        
+        <button onclick="closeImportanceSelectModal()" 
+                class="w-full mt-3 py-2.5 text-[10px] lg:text-xs font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors">
+            Hủy bỏ
+        </button>
+    </div>
+</div>
+
+<!-- 🟡 THÊM MỚI: MODAL THÔNG BÁO KẾT QUẢ MỨC ĐỘ (MÀU VÀNG) -->
+<div id="importance-result-modal" class="fixed inset-0 z-[13001] hidden items-center justify-center bg-black/90 backdrop-blur-2xl p-4">
+    <div class="glass p-6 lg:p-8 rounded-[32px] max-w-md w-full text-center border-2 border-amber-500/30 animate-in zoom-in duration-500" style="background: rgba(15, 23, 42, 0.95); box-shadow: 0 0 80px rgba(245, 158, 11, 0.1);">
+        
+        <!-- Badge -->
+        <div class="flex justify-center mb-3">
+            <span id="result-modal-badge" class="result-modal-badge px-4 py-1 rounded-full text-[10px] lg:text-xs font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                THƯỜNG
+            </span>
+        </div>
+        
+        <!-- Icon -->
+        <div class="w-20 h-20 lg:w-24 lg:h-24 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4 glow-ring" style="box-shadow: 0 0 60px rgba(245, 158, 11, 0.2);">
+            <i id="result-modal-icon" class="fa-regular fa-clock text-4xl lg:text-5xl text-amber-400"></i>
+        </div>
+        
+        <!-- Title -->
+        <h3 id="result-modal-title" class="result-modal-title text-xl lg:text-2xl font-black uppercase italic text-amber-400 mb-3 tracking-tight">
+            MỨC ĐỘ THƯỜNG
+        </h3>
+        
+        <!-- Description -->
+        <div class="bg-black/30 rounded-2xl p-4 lg:p-5 mb-4 border border-amber-500/10">
+            <p id="result-modal-desc" class="result-modal-desc text-sm lg:text-base text-slate-200 leading-relaxed font-medium">
+                Dữ liệu điểm danh sẽ được <span class="text-blue-400 font-bold">tự động xóa sau 30 ngày</span> để giải phóng dung lượng.
+            </p>
+        </div>
+        
+        <!-- Footer -->
+        <div class="flex items-center justify-center gap-2 lg:gap-3 text-amber-400/60 bg-amber-500/5 rounded-full px-4 lg:px-5 py-2 border border-amber-500/10">
+            <i class="fa-regular fa-bell text-xs lg:text-sm"></i>
+            <span id="result-modal-sub" class="result-modal-sub text-[9px] lg:text-xs font-bold uppercase tracking-wider">Hệ thống sẽ tự động dọn dẹp</span>
+        </div>
+        
+        <!-- Button -->
+        <button onclick="closeImportanceResultModal()" 
+                class="mt-5 lg:mt-6 w-full py-3.5 lg:py-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl text-white font-black uppercase text-xs lg:text-sm tracking-wider hover:shadow-lg hover:shadow-amber-500/30 transition-all active:scale-95">
+            <i class="fa-regular fa-check-circle mr-2 text-sm lg:text-base"></i> ĐÃ HIỂU
+        </button>
+    </div>
+</div>
 
 </body>
 </html>
